@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A Estrutura Completa | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">02 — Instalação e Arquitetura</a> → <span>A Estrutura Completa</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>A Estrutura Completa: Clients, Users, Roles, Groups</h2>
+
+      <p>Quatro entidades formam o coração do Keycloak. Entenda como elas se relacionam e você entende o modelo inteiro.</p>
+
+      <h3>As 4 entidades principais</h3>
+
+      <div class="interactive-box">
+        <div class="sidebar-layout">
+        <div class="entities-list">
+          <div class="entity-item active" onclick="selectEntity(this, 'users')">
+            <span class="entity-icon">👤</span> Users
+          </div>
+          <div class="entity-item" onclick="selectEntity(this, 'clients')">
+            <span class="entity-icon">📱</span> Clients
+          </div>
+          <div class="entity-item" onclick="selectEntity(this, 'roles')">
+            <span class="entity-icon">🎭</span> Roles
+          </div>
+          <div class="entity-item" onclick="selectEntity(this, 'groups')">
+            <span class="entity-icon">👥</span> Groups
+          </div>
+        </div>
+        <div class="entity-detail" id="entityDetail">
+          <p id="entityDesc">Pessoas (ou service accounts) que se autenticam no Keycloak. Cada user tem username, email, credenciais e pode pertencer a groups e ter roles.</p>
+          <div id="entityRelation" class="detail-examples">
+            <strong>Relações:</strong> pertence a Groups, tem Roles (direto ou via Group), acessa Clients
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <h3>Como se relacionam</h3>
+
+      <div class="interactive-box" style="padding: 32px;">
+        <div class="rel-diagram">
+          <div class="rel-center">
+            <div class="rel-entity rel-groups">👥 Groups</div>
+            <div class="rel-entity rel-users">👤 Users</div>
+            <div class="rel-entity rel-roles">🎭 Roles</div>
+            <div class="rel-entity rel-clients">📱 Clients</div>
+          </div>
+          <div class="rel-connections-list">
+            <div class="rel-connection">
+              <span class="rel-from">👥 Groups</span>
+              <span class="rel-verb">contêm</span>
+              <span class="rel-to">👤 Users</span>
+            </div>
+            <div class="rel-connection">
+              <span class="rel-from">👥 Groups</span>
+              <span class="rel-verb">têm</span>
+              <span class="rel-to">🎭 Roles</span>
+            </div>
+            <div class="rel-connection">
+              <span class="rel-from">👤 Users</span>
+              <span class="rel-verb">herdam</span>
+              <span class="rel-to">🎭 Roles via Group</span>
+            </div>
+            <div class="rel-connection">
+              <span class="rel-from">👤 Users</span>
+              <span class="rel-verb">podem ter</span>
+              <span class="rel-to">🎭 Roles direto</span>
+            </div>
+            <div class="rel-connection">
+              <span class="rel-from">📱 Clients</span>
+              <span class="rel-verb">definem</span>
+              <span class="rel-to">🎭 Client Roles</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Realm Roles vs Client Roles</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>🌐 Realm Roles</h4>
+          <ul>
+            <li>Globais ao realm</li>
+            <li>Ex: "admin", "user", "manager"</li>
+            <li>No token: <code>realm_access.roles</code></li>
+            <li>Qualquer client pode verificar</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>📱 Client Roles</h4>
+          <ul>
+            <li>Específicas de um client</li>
+            <li>Ex: "editor" no app X</li>
+            <li>No token: <code>resource_access.{client}.roles</code></li>
+            <li>Escopo mais restrito</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="interactive-box">
+        <h4 style="font-family: var(--font-display); margin-bottom: 12px;">🎫 Como fica no token</h4>
+        <pre><code>{
+  "realm_access": {
+    "roles": ["user", "manager"]
+  },
+  "resource_access": {
+    "my-app": {
+      "roles": ["editor", "viewer"]
+    },
+    "another-app": {
+      "roles": ["admin"]
+    }
+  }
+}</code></pre>
+      </div>
+
+      <h3>Criando cada entidade</h3>
+
+      <div class="interactive-box">
+        <div class="howto-tabs">
+          <button class="howto-tab active" onclick="showHowTo('user')">👤 User</button>
+          <button class="howto-tab" onclick="showHowTo('client')">📱 Client</button>
+          <button class="howto-tab" onclick="showHowTo('role')">🎭 Role</button>
+          <button class="howto-tab" onclick="showHowTo('group')">👥 Group</button>
+        </div>
+        <div class="howto-content" id="howtoContent">
+          <div class="howto-panel active" id="howto-user">
+            <ol>
+              <li>Menu lateral → <strong>Users</strong></li>
+              <li>Clique <strong>Add User</strong></li>
+              <li>Preencha: username, email, first/last name</li>
+              <li>Salve → vá na aba <strong>Credentials</strong></li>
+              <li>Set Password → defina uma senha → Temporary: OFF</li>
+            </ol>
+          </div>
+          <div class="howto-panel" id="howto-client">
+            <ol>
+              <li>Menu lateral → <strong>Clients</strong></li>
+              <li>Clique <strong>Create Client</strong></li>
+              <li>Client ID: nome único (ex: <code>my-app</code>)</li>
+              <li>Client type: OpenID Connect</li>
+              <li>Next → configure Client authentication (ON/OFF) e redirect URIs</li>
+            </ol>
+          </div>
+          <div class="howto-panel" id="howto-role">
+            <ol>
+              <li>Menu lateral → <strong>Realm Roles</strong></li>
+              <li>Clique <strong>Create Role</strong></li>
+              <li>Role name: nome descritivo (ex: <code>can-edit</code>)</li>
+              <li>Opcionalmente adicione uma descrição</li>
+              <li>Salve. Agora atribua a users ou groups.</li>
+            </ol>
+          </div>
+          <div class="howto-panel" id="howto-group">
+            <ol>
+              <li>Menu lateral → <strong>Groups</strong></li>
+              <li>Clique <strong>Create Group</strong></li>
+              <li>Name: nome do grupo (ex: <code>developers</code>)</li>
+              <li>Salve → aba <strong>Role Mapping</strong> → atribua roles</li>
+              <li>Aba <strong>Members</strong> → adicione usuários</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <h3>O fluxo completo</h3>
+
+      <div class="interactive-box">
+        <div class="flow-visual" id="flowVisual">
+          <div class="flow-step" data-flow="1">
+            <div class="flow-icon">👤</div>
+            <p><strong>User faz login</strong></p>
+            <p class="flow-desc">Keycloak autentica o usuário</p>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-step" data-flow="2">
+            <div class="flow-icon">👥</div>
+            <p><strong>Verifica groups</strong></p>
+            <p class="flow-desc">Em quais grupos este user está?</p>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-step" data-flow="3">
+            <div class="flow-icon">🎭</div>
+            <p><strong>Coleta roles</strong></p>
+            <p class="flow-desc">Roles diretas + herdadas dos groups</p>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-step" data-flow="4">
+            <div class="flow-icon">🎫</div>
+            <p><strong>Monta o token</strong></p>
+            <p class="flow-desc">Todas as roles vão no JWT</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Exercício</h3>
+
+      <div class="interactive-box" style="border-left: 4px solid var(--accent);">
+        <h4 style="font-family: var(--font-display);">🧪 Monte a estrutura</h4>
+        <p style="color: var(--text-secondary); margin-bottom: 12px;">No realm <code>authlab</code>, crie:</p>
+        <div class="exercise-checklist">
+          <label class="checklist-item"><input type="checkbox"><span>Usuária <code>maria</code> (com senha)</span></label>
+          <label class="checklist-item"><input type="checkbox"><span>Grupo <code>developers</code></span></label>
+          <label class="checklist-item"><input type="checkbox"><span>Realm role <code>can-edit</code></span></label>
+          <label class="checklist-item"><input type="checkbox"><span>Role <code>can-edit</code> atribuída ao grupo <code>developers</code></span></label>
+          <label class="checklist-item"><input type="checkbox"><span>Usuária <code>maria</code> adicionada ao grupo <code>developers</code></span></label>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 12px;">Resultado: maria herda a role <code>can-edit</code> automaticamente via grupo.</p>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>Groups simplificam a gestão. Atribua roles a groups, adicione users a groups. Users herdam roles automaticamente. Menos trabalho, menos erro.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="03-admin-console-tour.html">← Módulo anterior</a>
+        <a href="05-configuracao-realm.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    const entityData = {
+      users: { desc: 'Pessoas (ou service accounts) que se autenticam no Keycloak. Cada user tem username, email, credenciais e pode pertencer a groups e ter roles.', relation: '<strong>Relações:</strong> pertence a Groups, tem Roles (direto ou via Group), acessa Clients' },
+      clients: { desc: 'Aplicações que os usuários acessam. Cada app que usa o Keycloak para autenticação precisa ser registrada como um client. Definem suas próprias Client Roles.', relation: '<strong>Relações:</strong> Users acessam Clients, Clients definem Client Roles, token indica roles do user naquele client' },
+      roles: { desc: 'Permissões que determinam o que o usuário pode fazer. Existem Realm Roles (globais) e Client Roles (específicas de um app). Aparecem no token JWT.', relation: '<strong>Relações:</strong> atribuídas a Users ou Groups, definidas no Realm ou em Clients, incluídas no token' },
+      groups: { desc: 'Containers organizacionais que simplificam a gestão. Contêm Users como membros e têm Roles atribuídas. Users herdam todas as roles do grupo.', relation: '<strong>Relações:</strong> contêm Users, têm Roles, podem ter sub-groups (hierarquia)' }
+    };
+
+    function selectEntity(el, key) {
+      const data = entityData[key];
+      document.getElementById('entityDesc').innerHTML = data.desc;
+      document.getElementById('entityRelation').innerHTML = data.relation;
+      document.querySelectorAll('.entity-item').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function showHowTo(type) {
+      document.querySelectorAll('.howto-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.howto-panel').forEach(p => p.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById(`howto-${type}`).classList.add('active');
+    }
+  </script>
+  <style>
+    .sidebar-layout { display: flex; gap: 20px; }
+    .entities-list { display: flex; flex-direction: column; gap: 2px; min-width: 160px; }
+    .entity-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: all 0.15s; border: 1px solid transparent; }
+    .entity-item:hover { background: var(--bg-card); border-color: var(--border); }
+    .entity-item.active { background: var(--bg-card); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+    .entity-icon { font-size: 1rem; }
+    .entity-detail { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; flex: 1; min-height: 80px; }
+    .entity-detail p { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.6; }
+    .detail-examples { font-size: 0.82rem; color: var(--text-secondary); padding-top: 10px; border-top: 1px solid var(--border); }
+
+    .relationship-diagram { display: flex; flex-direction: column; gap: 8px; }
+    .rel-diagram { display: flex; flex-direction: column; gap: 24px; }
+    .rel-center { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+    .rel-entity { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; font-size: 0.9rem; font-weight: 500; font-family: var(--font-display); }
+    .rel-groups { border-color: #9b59b6; }
+    .rel-users { border-color: var(--accent); }
+    .rel-roles { border-color: #2ecc71; }
+    .rel-clients { border-color: #3498db; }
+    .rel-connections-list { display: flex; flex-direction: column; gap: 8px; max-width: 500px; margin: 0 auto; }
+    .rel-connection { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 55px; padding: 10px 16px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border); }
+    .rel-from { font-size: 0.85rem; font-weight: 500; text-align: right; }
+    .rel-verb { font-size: 0.82rem; color: var(--accent); font-weight: 600; font-family: var(--font-display); text-align: center; }
+    .rel-to { font-size: 0.85rem; font-weight: 500; text-align: left; }
+    .rel-connections { flex: 1; text-align: center; }
+    .howto-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+    .howto-tab { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 14px; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; color: var(--text-secondary); font-family: var(--font-display); font-weight: 500; }
+    .howto-tab:hover { border-color: var(--accent); color: var(--text-primary); }
+    .howto-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .howto-panel { display: none; }
+    .howto-panel.active { display: block; }
+    .howto-panel ol { padding-left: 20px; color: var(--text-secondary); font-size: 0.85rem; }
+    .howto-panel li { margin-bottom: 8px; }
+
+    .flow-visual { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .flow-step { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 24px; text-align: center; width: 100%; max-width: 300px; }
+    .flow-icon { font-size: 1.5rem; margin-bottom: 4px; }
+    .flow-step p { margin: 0; font-size: 0.85rem; }
+    .flow-desc { color: var(--text-secondary) !important; font-size: 0.8rem !important; }
+    .flow-arrow { font-size: 1.5rem; color: var(--accent); font-weight: 700; text-align: center; }
+
+    .exercise-checklist { display: flex; flex-direction: column; gap: 8px; }
+    .checklist-item { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer; }
+    .checklist-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+
+    @media (max-width: 640px) {
+      .sidebar-layout { flex-direction: column; }
+      .comparison { grid-template-columns: 1fr; }
+      .rel-row { flex-wrap: wrap; justify-content: center; }
+      .howto-tabs { gap: 4px; }
+      .howto-tab { font-size: 0.75rem; padding: 6px 10px; }
+    }
+  </style>
+</body>
+</html>

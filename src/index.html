@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuthLab — Treinamento Interativo de OAuth2, SSO e Keycloak</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/trilha.css">
+  <script src="js/main.js"></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <main id="main-content">
+
+    <section class="hero">
+      <h2>Aprenda autenticação de verdade</h2>
+      <p>Treinamento interativo e visual de OAuth2, OpenID Connect, SSO e Keycloak — do fundamento à operação em produção.</p>
+    </section>
+
+    <section>
+      <h2>Trilhas</h2>
+      <div class="trilhas-grid">
+
+        <a href="trilhas/01-fundamentos/index.html" class="card">
+          <div class="trilha-card">
+            <span class="trilha-number">01</span>
+            <div class="trilha-info">
+              <h3>Fundamentos</h3>
+              <p>OAuth2, OIDC, JWT, autenticação vs autorização. O que é cada coisa e por que existe.</p>
+              <span class="trilha-modules">4 módulos</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="trilhas/02-instalacao-arquitetura/index.html" class="card">
+          <div class="trilha-card">
+            <span class="trilha-number">02</span>
+            <div class="trilha-info">
+              <h3>Instalação e Arquitetura</h3>
+              <p>Keycloak local com Docker. Realms, clients, users, roles — entenda toda a estrutura por dentro.</p>
+              <span class="trilha-modules">5 módulos</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="trilhas/03-fluxos-oauth2/index.html" class="card">
+          <div class="trilha-card">
+            <span class="trilha-number">03</span>
+            <div class="trilha-info">
+              <h3>Fluxos OAuth2/OIDC</h3>
+              <p>Authorization Code, Client Credentials, Direct Grant — cada fluxo animado passo a passo.</p>
+              <span class="trilha-modules">5 módulos</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="trilhas/04-clients/index.html" class="card">
+          <div class="trilha-card">
+            <span class="trilha-number">04</span>
+            <div class="trilha-info">
+              <h3>Clients na Prática</h3>
+              <p>Confidential vs Public. Configuração, scopes, mappers e service accounts na prática.</p>
+              <span class="trilha-modules">6 módulos</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="trilhas/05-usuarios-identidade/index.html" class="card">
+          <div class="trilha-card">
+            <span class="trilha-number">05</span>
+            <div class="trilha-info">
+              <h3>Usuários e Identidade</h3>
+              <p>User Federation com LDAP, Identity Providers, social login e gestão centralizada de identidades.</p>
+              <span class="trilha-modules">5 módulos</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="trilhas/06-seguranca/index.html" class="card">
+          <div class="trilha-card">
+            <span class="trilha-number">06</span>
+            <div class="trilha-info">
+              <h3>Segurança e Políticas</h3>
+              <p>Brute force, rotação de chaves, CORS, gerenciamento de sessões e auditoria de eventos no Keycloak.</p>
+              <span class="trilha-modules">5 módulos</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="trilhas/07-integracao/index.html" class="card">
+          <div class="trilha-card">
+            <span class="trilha-number">07</span>
+            <div class="trilha-info">
+              <h3>Integração com Aplicações</h3>
+              <p>Spring Boot, Node.js, React. Proteger APIs, gerenciar logout, refresh tokens e session management.</p>
+              <span class="trilha-modules">6 módulos</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="trilhas/08-operacao-producao/index.html" class="card">
+          <div class="trilha-card">
+            <span class="trilha-number">08</span>
+            <div class="trilha-info">
+              <h3>Operação em Produção</h3>
+              <p>Cluster, proxy reverso, TLS, monitoramento, backup e estratégias de upgrade seguro em produção.</p>
+              <span class="trilha-modules">6 módulos</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="trilhas/09-avancado/index.html" class="card">
+          <div class="trilha-card">
+            <span class="trilha-number">09</span>
+            <div class="trilha-info">
+              <h3>Avançado</h3>
+              <p>Custom themes, SPIs, API Admin, Terraform, multi-tenancy e token exchange avançado.</p>
+              <span class="trilha-modules">6 módulos</span>
+            </div>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <section class="study-plan">
+      <h2>Plano de estudo sugerido</h2>
+      <p class="study-intro">Siga esta ordem para uma progressão lógica. Cada trilha leva de 1 a 3 horas dependendo do seu ritmo.</p>
+
+      <div class="study-phases">
+        <div class="phase">
+          <div class="phase-header">
+            <span class="phase-number">Fase 1</span>
+            <span class="phase-title">Fundamentos</span>
+          </div>
+          <p>Trilhas 1 e 2 — Entenda os conceitos e suba seu ambiente.</p>
+        </div>
+        <div class="phase">
+          <div class="phase-header">
+            <span class="phase-number">Fase 2</span>
+            <span class="phase-title">Prática core</span>
+          </div>
+          <p>Trilhas 3, 4 e 5 — Domine fluxos, clients e identidade.</p>
+        </div>
+        <div class="phase">
+          <div class="phase-header">
+            <span class="phase-number">Fase 3</span>
+            <span class="phase-title">Produção</span>
+          </div>
+          <p>Trilhas 6, 7 e 8 — Segurança, integração e operação.</p>
+        </div>
+        <div class="phase">
+          <div class="phase-header">
+            <span class="phase-number">Fase 4</span>
+            <span class="phase-title">Especialização</span>
+          </div>
+          <p>Trilha 9 — Tópicos avançados para quem quer ir além.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="tools-section">
+      <h2>Ferramentas de apoio</h2>
+      <p class="study-intro">Tenha essas ferramentas à mão durante o treinamento.</p>
+      <div class="tools-grid">
+        <a href="https://docs.docker.com/get-docker/" target="_blank" rel="noopener" class="tool-card">
+          <span class="tool-icon" aria-hidden="true">🐳</span>
+          <h4>Docker Desktop</h4>
+          <p>Subir o Keycloak localmente em segundos</p>
+        </a>
+        <a href="https://jwt.io" target="_blank" rel="noopener" class="tool-card">
+          <span class="tool-icon" aria-hidden="true">🔑</span>
+          <h4>jwt.io</h4>
+          <p>Decodificar e inspecionar tokens JWT</p>
+        </a>
+        <a href="https://www.postman.com/downloads/" target="_blank" rel="noopener" class="tool-card">
+          <span class="tool-icon" aria-hidden="true">📮</span>
+          <h4>Postman</h4>
+          <p>Testar fluxos OAuth2 visualmente</p>
+        </a>
+        <a href="https://www.keycloak.org/documentation" target="_blank" rel="noopener" class="tool-card">
+          <span class="tool-icon" aria-hidden="true">📖</span>
+          <h4>Keycloak Docs</h4>
+          <p>Documentação oficial de referência</p>
+        </a>
+        <a href="https://openid.net/developers/how-connect-works/" target="_blank" rel="noopener" class="tool-card">
+          <span class="tool-icon" aria-hidden="true">🌐</span>
+          <h4>OpenID Connect</h4>
+          <p>Especificação oficial do protocolo</p>
+        </a>
+        <a href="https://oauth.net/2/" target="_blank" rel="noopener" class="tool-card">
+          <span class="tool-icon" aria-hidden="true">📋</span>
+          <h4>OAuth 2.0</h4>
+          <p>Referência simplificada do framework</p>
+        </a>
+        <a href="glossario.html" class="tool-card">
+          <span class="tool-icon" aria-hidden="true">📚</span>
+          <h4>Glossário</h4>
+          <p>Termos-chave explicados em uma linha</p>
+        </a>
+      </div>
+    </section>
+
+    </main>
+
+    <footer class="footer">
+      <div class="footer-content">
+        <span class="footer-logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span>
+        <p>Criado por <strong>Fábio Fernandes</strong></p>
+        <p class="footer-sub">Treinamento open source de OAuth2, OIDC e Keycloak.</p>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

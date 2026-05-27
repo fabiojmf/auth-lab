@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glossário | AuthLab</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/trilha.css">
+  <script src="js/main.js"></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="index.html">Início</a> → <span>Glossário</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Glossário</h2>
+      <p>Referência rápida dos termos usados ao longo do treinamento.</p>
+
+      <input type="search" class="glossary-search" placeholder="Buscar termo..." aria-label="Buscar no glossário" id="glossarySearch">
+
+      <dl class="glossary-list" id="glossaryList">
+        <div class="glossary-item">
+          <dt id="access-token">Access Token</dt>
+          <dd>Token JWT enviado nas requisições a APIs protegidas. Contém permissões (scopes/roles) e tem vida curta (geralmente 5 min). <em>Trilha 01, módulo 03.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="authorization-code">Authorization Code</dt>
+          <dd>Código temporário (de uso único) retornado pelo Keycloak após login bem-sucedido. É trocado por tokens no backend. <em>Trilha 03, módulo 01.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="claim">Claim</dt>
+          <dd>Um campo dentro de um token JWT. Cada claim é uma "afirmação" sobre o usuário (ex: <code>email</code>, <code>name</code>, <code>roles</code>). <em>Trilha 01, módulo 04.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="client">Client</dt>
+          <dd>Uma aplicação registrada no Keycloak que pode solicitar autenticação. Pode ser confidential (com secret) ou public (sem secret). <em>Trilha 04.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="client-credentials">Client Credentials</dt>
+          <dd>Fluxo OAuth2 para comunicação máquina-a-máquina (sem usuário humano). O client se autentica com seu próprio ID e secret. <em>Trilha 03, módulo 02.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="confidential-client">Confidential Client</dt>
+          <dd>Client que pode guardar um segredo (secret) de forma segura — tipicamente aplicações com backend. <em>Trilha 04, módulo 01.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="cors">CORS (Cross-Origin Resource Sharing)</dt>
+          <dd>Mecanismo do browser que controla quais origens podem fazer requisições a uma API. Configurado no Keycloak via Web Origins. <em>Trilha 06, módulo 03.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="direct-grant">Direct Grant (Resource Owner Password)</dt>
+          <dd>Fluxo onde a aplicação recebe diretamente usuário/senha e troca por token. Uso restrito a cenários legados. <em>Trilha 03, módulo 03.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="grant-type">Grant Type</dt>
+          <dd>O "tipo de concessão" usado para obter tokens. Exemplos: <code>authorization_code</code>, <code>client_credentials</code>, <code>refresh_token</code>.</dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="id-token">ID Token</dt>
+          <dd>Token JWT emitido pelo OIDC que contém informações de identidade do usuário (quem ele é). Não deve ser enviado a APIs. <em>Trilha 01, módulo 03.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="identity-provider">Identity Provider (IdP)</dt>
+          <dd>Sistema que autentica usuários e emite tokens. O Keycloak é um IdP. Google, GitHub e Azure AD também são IdPs. <em>Trilha 05, módulo 03.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="issuer">Issuer (iss)</dt>
+          <dd>Claim no JWT que identifica quem emitiu o token. Formato: <code>http://localhost:8080/realms/authlab</code>. Usado para validação.</dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="jwt">JWT (JSON Web Token)</dt>
+          <dd>Formato de token compacto com 3 partes: header.payload.signature. Codificado em Base64URL e assinado digitalmente. <em>Trilha 01, módulo 04.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="oauth2">OAuth 2.0</dt>
+          <dd>Framework de autorização que permite a aplicações obter acesso limitado a recursos em nome de um usuário, sem expor suas credenciais. <em>Trilha 01, módulo 03.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="oidc">OIDC (OpenID Connect)</dt>
+          <dd>Camada de identidade construída sobre o OAuth2. Adiciona o ID Token e o endpoint <code>/userinfo</code>. <em>Trilha 01, módulo 03.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="pkce">PKCE (Proof Key for Code Exchange)</dt>
+          <dd>Extensão de segurança para o Authorization Code Flow. Usa code_verifier + code_challenge para proteger a troca do code. Obrigatório para public clients. <em>Trilha 03, módulo 01.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="public-client">Public Client</dt>
+          <dd>Client que NÃO pode guardar um segredo — SPAs (React, Angular), apps mobile. Usa PKCE em vez de client_secret. <em>Trilha 04, módulo 01.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="realm">Realm</dt>
+          <dd>Espaço isolado no Keycloak com seus próprios usuários, clients, roles e configurações. Equivalente a um "tenant". <em>Trilha 02, módulo 02.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="redirect-uri">Redirect URI</dt>
+          <dd>URL para onde o Keycloak redireciona o browser após login. Deve ser pré-registrada no client para segurança.</dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="refresh-token">Refresh Token</dt>
+          <dd>Token de longa duração usado para obter novos access tokens sem re-autenticar o usuário. <em>Trilha 03, módulo 04.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="role">Role</dt>
+          <dd>Papel atribuído a um usuário que define suas permissões. Pode ser realm role (global) ou client role (específico de um client).</dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="scope">Scope</dt>
+          <dd>Define quais informações/permissões o client está solicitando. Exemplos: <code>openid</code>, <code>profile</code>, <code>email</code>. <em>Trilha 04, módulo 03.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="service-account">Service Account</dt>
+          <dd>Conta associada a um client (não a um humano) usada no fluxo Client Credentials. <em>Trilha 04, módulo 04.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="sso">SSO (Single Sign-On)</dt>
+          <dd>Mecanismo que permite ao usuário fazer login uma vez e acessar múltiplos sistemas sem re-autenticar. <em>Trilha 01, módulo 02.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="state">State</dt>
+          <dd>Parâmetro aleatório enviado no Authorization Request e verificado no callback. Protege contra ataques CSRF.</dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="token-exchange">Token Exchange</dt>
+          <dd>Mecanismo para trocar um token por outro com escopo diferente — delegação, impersonation ou downscoping. <em>Trilha 09, módulo 06.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="user-federation">User Federation</dt>
+          <dd>Integração do Keycloak com fontes externas de usuários (LDAP, Active Directory). <em>Trilha 05, módulo 02.</em></dd>
+        </div>
+        <div class="glossary-item">
+          <dt id="well-known">Well-Known (Discovery Endpoint)</dt>
+          <dd>Endpoint <code>/.well-known/openid-configuration</code> que expõe todos os endpoints e capacidades do servidor OIDC.</dd>
+        </div>
+      </dl>
+    </article>
+  </div>
+
+  <script>
+    document.getElementById('glossarySearch').addEventListener('input', function(e) {
+      const q = e.target.value.toLowerCase();
+      document.querySelectorAll('.glossary-item').forEach(function(item) {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

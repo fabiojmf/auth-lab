@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infrastructure as Code (Terraform) | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">09 — Avançado</a> → <span>Infrastructure as Code (Terraform)</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Infrastructure as Code (Terraform)</h2>
+
+      <p>Gerenciar Keycloak manualmente pelo Admin Console funciona para um ambiente. Para múltiplos ambientes com consistência, rastreabilidade e reprodutibilidade, você precisa de <strong>Infrastructure as Code</strong>.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">📋</span>
+        <h3>Por que IaC para Keycloak?</h3>
+        <p>Reprodutibilidade, versionamento no Git, audit trail, consistência entre dev/staging/prod e rollback fácil.</p>
+      </div>
+
+      <h3>Terraform Keycloak Provider</h3>
+
+      <p>O provider oficial <code>keycloak/keycloak</code> (mantido pelo projeto Keycloak desde 2025, anteriormente <code>mrparkers/keycloak</code>) permite gerenciar via Terraform:</p>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Recurso</th><th>Terraform Resource</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Realms</td><td><code>keycloak_realm</code></td></tr>
+            <tr><td>Clients (OIDC/SAML)</td><td><code>keycloak_openid_client</code></td></tr>
+            <tr><td>Client Scopes</td><td><code>keycloak_openid_client_scope</code></td></tr>
+            <tr><td>Roles</td><td><code>keycloak_role</code></td></tr>
+            <tr><td>Groups</td><td><code>keycloak_group</code></td></tr>
+            <tr><td>Identity Providers</td><td><code>keycloak_oidc_identity_provider</code></td></tr>
+            <tr><td>User Federation</td><td><code>keycloak_ldap_user_federation</code></td></tr>
+            <tr><td>Auth Flows</td><td><code>keycloak_authentication_flow</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Exemplo Básico</h3>
+
+      <div class="code-block">terraform {
+  required_providers {
+    keycloak = {
+      source  = "keycloak/keycloak"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "keycloak" {
+  client_id = "admin-cli"
+  username  = var.kc_admin_user
+  password  = var.kc_admin_password
+  url       = var.kc_url
+}
+
+resource "keycloak_realm" "my_realm" {
+  realm   = "my-app"
+  enabled = true
+
+  login_theme   = "my-custom-theme"
+  default_signature_algorithm = "RS256"
+}
+
+resource "keycloak_openid_client" "frontend" {
+  realm_id              = keycloak_realm.my_realm.id
+  client_id             = "my-frontend"
+  access_type           = "PUBLIC"
+  standard_flow_enabled = true
+  valid_redirect_uris   = ["https://app.example.com/*"]
+  web_origins           = ["https://app.example.com"]
+}</div>
+
+      <h3>Workflow</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content"><p><code>terraform init</code> — baixa o provider</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content"><p><code>terraform plan</code> — mostra o que será criado/alterado/destruído</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content"><p><code>terraform apply</code> — aplica as mudanças no Keycloak</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-content"><p><code>terraform import</code> — importa recursos existentes para o state</p></div>
+        </div>
+      </div>
+
+      <h3>Boas Práticas</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>✅ Faça</h4>
+          <div class="comp-field">State remoto (S3, GCS, Terraform Cloud)</div>
+          <div class="comp-field">Variáveis para secrets — nunca hardcode</div>
+          <div class="comp-field">Ambientes separados (workspaces ou dirs)</div>
+          <div class="comp-field">Import antes de gerenciar KC existente</div>
+          <div class="comp-field">Pin de versão do provider</div>
+        </div>
+        <div class="comparison-side">
+          <h4>❌ Evite</h4>
+          <div class="comp-field">State local em produção</div>
+          <div class="comp-field">Senhas no código .tf</div>
+          <div class="comp-field">Um único state para tudo</div>
+          <div class="comp-field">Aplicar sem plan review</div>
+          <div class="comp-field">Gerenciar usuários individuais via TF</div>
+        </div>
+      </div>
+
+      <h3>Limitações</h3>
+
+      <div class="warning-box">
+        <span class="wb-icon">⚠️</span>
+        <div>
+          <p>Nem todos os recursos do Keycloak são suportados pelo provider. Custom SPIs, themes e algumas configurações avançadas precisam ser gerenciados por outros meios (scripts, Dockerfile).</p>
+        </div>
+      </div>
+
+      <ul>
+        <li>Alguns recursos exigem ordenação específica (realm antes de client)</li>
+        <li>Mudanças manuais no Admin Console causam drift no state</li>
+        <li>Provider pode demorar para suportar features novas do KC</li>
+      </ul>
+
+      <h3>Alternativa: Keycloak Config CLI</h3>
+
+      <p>O <code>adorsys/keycloak-config-cli</code> usa YAML/JSON para configurar o Keycloak. Mais simples que Terraform para quem não precisa de state management:</p>
+
+      <div class="code-block">realm: my-app
+enabled: true
+clients:
+  - clientId: my-frontend
+    publicClient: true
+    redirectUris:
+      - "https://app.example.com/*"</div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Terraform dá reprodutibilidade e versionamento à configuração do Keycloak. Essencial para multi-ambiente. Use variáveis para secrets, state remoto, e sempre faça <code>terraform plan</code> antes de aplicar. Para casos mais simples, considere o Keycloak Config CLI.</p>
+      </div>
+      <nav class="module-nav">
+        <a href="03-admin-api.html">← API Admin</a>
+        <a href="05-multi-tenancy.html">Multi-Tenancy →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    .warning-box { background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; }
+    .wb-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .warning-box p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+    .steps-list { margin: 20px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+    .step-content p { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

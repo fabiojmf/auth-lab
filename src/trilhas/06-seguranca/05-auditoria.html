@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoria e Eventos | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">06 — Segurança e Políticas</a> → <span>Auditoria e Eventos</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Auditoria e Eventos</h2>
+
+      <p>Sem eventos habilitados, você está <strong>cego</strong>. Quando algo dá errado — um login suspeito, uma configuração alterada, um usuário bloqueado — sem auditoria não há como investigar. O Keycloak tem um sistema de eventos robusto, mas precisa ser ativado.</p>
+
+      <h3>Por que auditar</h3>
+
+      <ul class="feature-list">
+        <li><strong>Compliance:</strong> regulamentações (LGPD, SOX, PCI-DSS) exigem registro de acessos</li>
+        <li><strong>Investigação de segurança:</strong> quem acessou o quê, quando, de onde</li>
+        <li><strong>Debugging:</strong> por que o login do usuário está falhando? Qual erro exato?</li>
+        <li><strong>Detecção de anomalias:</strong> logins de IPs incomuns, horários estranhos</li>
+      </ul>
+
+      <h3>Dois tipos de eventos</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>👤 Login Events</h4>
+          <div class="comp-field"><strong>O que registra:</strong> Ações de usuários</div>
+          <div class="comp-field"><strong>Exemplos:</strong> LOGIN, LOGIN_ERROR, LOGOUT, REGISTER, TOKEN_EXCHANGE, CODE_TO_TOKEN</div>
+          <div class="comp-field"><strong>Campos:</strong> type, clientId, userId, ipAddress, error, details</div>
+          <div class="comp-field"><strong>Uso:</strong> "Quem logou?", "Por que falhou?"</div>
+        </div>
+        <div class="comparison-side">
+          <h4>👨‍💼 Admin Events</h4>
+          <div class="comp-field"><strong>O que registra:</strong> Ações administrativas</div>
+          <div class="comp-field"><strong>Exemplos:</strong> CREATE_CLIENT, UPDATE_USER, DELETE_REALM, UPDATE_REALM</div>
+          <div class="comp-field"><strong>Campos:</strong> operationType, resourceType, resourcePath, representation</div>
+          <div class="comp-field"><strong>Uso:</strong> "Quem mudou a config?", "Quem deletou o client?"</div>
+        </div>
+      </div>
+
+      <h3>Configuração</h3>
+
+      <p>Acesse: <strong>Realm Settings → Events</strong></p>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Configuração</th>
+              <th>Descrição</th>
+              <th>Recomendação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Save Events</code></td>
+              <td>Liga/desliga o salvamento de login events</td>
+              <td>✅ Sempre ON em produção</td>
+            </tr>
+            <tr>
+              <td><code>Expiration</code></td>
+              <td>Quanto tempo manter os eventos</td>
+              <td>90 dias mínimo (ou conforme compliance). ⚠️ Eventos são armazenados no banco do Keycloak. Em ambientes com alto tráfego, retenção longa (90+ dias) pode impactar performance. Para retenção de longo prazo, exporte eventos para um sistema externo (SIEM/ELK) e mantenha apenas 7-30 dias no Keycloak.</td>
+            </tr>
+            <tr>
+              <td><code>Saved Types</code></td>
+              <td>Quais tipos de evento salvar</td>
+              <td>Todos (ou pelo menos LOGIN, LOGIN_ERROR, LOGOUT)</td>
+            </tr>
+            <tr>
+              <td><code>Save Admin Events</code></td>
+              <td>Liga/desliga admin events</td>
+              <td>✅ Sempre ON</td>
+            </tr>
+            <tr>
+              <td><code>Include Representation</code></td>
+              <td>Salva o JSON completo da alteração admin</td>
+              <td>ON (permite ver o que mudou)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Campos de um Login Event</h3>
+
+      <div class="code-block"><code>{
+  "type": "LOGIN",
+  "realmId": "meu-realm",
+  "clientId": "app-frontend",
+  "userId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "ipAddress": "192.168.1.100",
+  "details": {
+    "auth_method": "openid-connect",
+    "grant_type": "authorization_code",
+    "username": "joao@empresa.com",
+    "redirect_uri": "https://app.example.com/callback"
+  }
+}</code></div>
+
+      <div class="code-block"><code>{
+  "type": "LOGIN_ERROR",
+  "clientId": "app-frontend",
+  "userId": null,
+  "ipAddress": "10.0.0.55",
+  "error": "user_temporarily_disabled",
+  "details": {
+    "username": "maria@empresa.com"
+  }
+}</code></div>
+
+      <h3>Simulador de Event Log</h3>
+
+      <div class="interactive-box">
+        <div class="event-viewer">
+          <div class="ev-filters">
+            <select id="filterType" onchange="filterEvents()">
+              <option value="all">Todos os tipos</option>
+              <option value="LOGIN">LOGIN</option>
+              <option value="LOGIN_ERROR">LOGIN_ERROR</option>
+              <option value="LOGOUT">LOGOUT</option>
+              <option value="CODE_TO_TOKEN">CODE_TO_TOKEN</option>
+            </select>
+            <select id="filterUser" onchange="filterEvents()">
+              <option value="all">Todos os usuários</option>
+              <option value="joao">joao@empresa.com</option>
+              <option value="maria">maria@empresa.com</option>
+              <option value="admin">admin</option>
+            </select>
+          </div>
+          <div class="ev-table" id="evTable">
+            <!-- populated by JS -->
+          </div>
+          <div class="ev-count" id="evCount"></div>
+        </div>
+      </div>
+
+      <h3>Cenários reais de investigação</h3>
+
+      <div class="scenarios-grid">
+        <div class="scenario-mini">
+          <span class="sm-icon">🕵️</span>
+          <strong>"Quem logou como admin ontem à noite?"</strong>
+          <p>Filtrar: type=LOGIN, user=admin, date range=ontem 22h-06h</p>
+        </div>
+        <div class="scenario-mini">
+          <span class="sm-icon">❓</span>
+          <strong>"Por que este usuário não consegue logar?"</strong>
+          <p>Filtrar: type=LOGIN_ERROR, username=usuario. Ver campo "error" — pode ser invalid_credentials, user_temporarily_disabled, user_disabled</p>
+        </div>
+        <div class="scenario-mini">
+          <span class="sm-icon">⚙️</span>
+          <strong>"Quem alterou a configuração do client?"</strong>
+          <p>Admin Events → filtrar por resourceType=CLIENT, operationType=UPDATE</p>
+        </div>
+        <div class="scenario-mini">
+          <span class="sm-icon">🔗</span>
+          <strong>"user_temporarily_disabled aparecendo"</strong>
+          <p>Brute force foi acionado (módulo 1). Verificar quantos LOGIN_ERROR precederam o bloqueio.</p>
+        </div>
+      </div>
+
+      <p><strong>Consulta via API REST:</strong></p>
+      <pre>GET /admin/realms/{realm}/events?type=LOGIN_ERROR&user={userId}</pre>
+      <p>Útil para dashboards, automação e integração com ferramentas de monitoramento.</p>
+
+      <h3>Event Listeners</h3>
+
+      <p>O Keycloak pode encaminhar eventos para sistemas externos em tempo real:</p>
+
+      <div class="concept-box">
+        <div class="concept-item">
+          <span class="ci-icon">📊</span>
+          <div class="ci-content">
+            <strong>SIEM (Splunk, ELK, Datadog)</strong>
+            <p>Enviar eventos para análise centralizada e alertas automáticos</p>
+          </div>
+        </div>
+        <div class="concept-item">
+          <span class="ci-icon">📝</span>
+          <div class="ci-content">
+            <strong>Logging externo</strong>
+            <p>Persistir eventos além do banco do Keycloak para retenção de longo prazo</p>
+          </div>
+        </div>
+        <div class="concept-item">
+          <span class="ci-icon">🔔</span>
+          <div class="ci-content">
+            <strong>Alertas customizados</strong>
+            <p>Notificar equipe de segurança em eventos críticos (ex: admin login de IP desconhecido)</p>
+          </div>
+        </div>
+      </div>
+
+      <p>Configuração: <strong>Realm Settings → Events → Event Listeners</strong>. O listener padrão é <code>jboss-logging</code> (escreve no log do servidor). Listeners customizados podem ser adicionados via SPI.</p>
+      <p>No Keycloak 20+ (baseado em Quarkus), o listener 'jboss-logging' escreve no sistema de logging do Quarkus. Configure via <code>--log-level</code> na linha de comando ou <code>KC_LOG_LEVEL</code> como variável de ambiente, não via standalone.xml.</p>
+      <p><strong>Abordagem prática mais comum:</strong> manter o listener <code>jboss-logging</code> → configurar formato JSON (<code>--log-format=json</code>) → coletar logs com Fluentd/Filebeat → enviar para ELK/Splunk. Não requer código customizado.</p>
+
+      <div class="key-takeaway">
+        <h4>💡 Key Takeaway</h4>
+        <p><strong>Sempre habilite eventos em produção.</strong> Sem eles, você não tem como investigar incidentes, provar compliance, ou debugar problemas de autenticação. O custo de armazenamento é mínimo comparado ao custo de estar cego durante um incidente de segurança. Configure retenção adequada e considere encaminhar para um SIEM.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="04-sessoes.html">← Sessões</a>
+        <a href="index.html">Trilha 6 →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    const events = [
+      { time: '10:23:01', type: 'LOGIN', user: 'joao', client: 'app-frontend', ip: '192.168.1.100', error: '' },
+      { time: '10:23:45', type: 'CODE_TO_TOKEN', user: 'joao', client: 'app-frontend', ip: '192.168.1.100', error: '' },
+      { time: '10:45:12', type: 'LOGIN_ERROR', user: 'maria', client: 'app-frontend', ip: '10.0.0.55', error: 'invalid_user_credentials' },
+      { time: '10:45:18', type: 'LOGIN_ERROR', user: 'maria', client: 'app-frontend', ip: '10.0.0.55', error: 'invalid_user_credentials' },
+      { time: '10:45:22', type: 'LOGIN_ERROR', user: 'maria', client: 'app-frontend', ip: '10.0.0.55', error: 'invalid_user_credentials' },
+      { time: '10:45:30', type: 'LOGIN_ERROR', user: 'maria', client: 'app-frontend', ip: '10.0.0.55', error: 'user_temporarily_disabled' },
+      { time: '11:02:00', type: 'LOGIN', user: 'admin', client: 'admin-console', ip: '172.16.0.1', error: '' },
+      { time: '11:30:00', type: 'LOGOUT', user: 'joao', client: 'app-frontend', ip: '192.168.1.100', error: '' },
+      { time: '14:15:33', type: 'LOGIN', user: 'maria', client: 'app-frontend', ip: '10.0.0.55', error: '' },
+      { time: '14:15:34', type: 'CODE_TO_TOKEN', user: 'maria', client: 'app-frontend', ip: '10.0.0.55', error: '' },
+    ];
+
+    function filterEvents() {
+      const typeFilter = document.getElementById('filterType').value;
+      const userFilter = document.getElementById('filterUser').value;
+      let filtered = events;
+      if (typeFilter !== 'all') filtered = filtered.filter(e => e.type === typeFilter);
+      if (userFilter !== 'all') filtered = filtered.filter(e => e.user === userFilter);
+      renderEvents(filtered);
+    }
+
+    function renderEvents(list) {
+      const table = document.getElementById('evTable');
+      const count = document.getElementById('evCount');
+      if (list.length === 0) {
+        table.innerHTML = '<div class="ev-empty">Nenhum evento encontrado com esses filtros.</div>';
+        count.textContent = '0 eventos';
+        return;
+      }
+      let html = '<div class="ev-header-row"><span>Hora</span><span>Tipo</span><span>Usuário</span><span>Client</span><span>IP</span><span>Erro</span></div>';
+      list.forEach(e => {
+        const typeClass = e.type.includes('ERROR') ? 'ev-type-error' : e.type === 'LOGOUT' ? 'ev-type-logout' : 'ev-type-ok';
+        html += `<div class="ev-row"><span>${e.time}</span><span class="${typeClass}">${e.type}</span><span>${e.user}@empresa.com</span><span>${e.client}</span><span>${e.ip}</span><span class="ev-error">${e.error || '—'}</span></div>`;
+      });
+      table.innerHTML = html;
+      count.textContent = `${list.length} evento(s)`;
+    }
+
+    renderEvents(events);
+  </script>
+  <style>
+    .feature-list { list-style: none; padding: 0; margin: 16px 0; }
+    .feature-list li { padding: 8px 0 8px 24px; position: relative; font-size: 0.88rem; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+    .feature-list li:last-child { border-bottom: none; }
+    .feature-list li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.82rem; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+
+    .event-viewer { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .ev-filters { display: flex; gap: 8px; margin-bottom: 12px; }
+    .ev-filters select { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 0.78rem; color: var(--text-primary); font-family: inherit; }
+    .ev-table { overflow-x: auto; }
+    .ev-header-row, .ev-row { display: grid; grid-template-columns: 70px 120px 1fr 100px 110px 1fr; gap: 8px; padding: 6px 8px; font-size: 0.78rem; align-items: center; }
+    .ev-header-row { font-weight: 600; border-bottom: 1px solid var(--border); color: var(--text-primary); }
+    .ev-row { border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .ev-row:last-child { border-bottom: none; }
+    .ev-type-error { color: #e74c3c; font-weight: 600; }
+    .ev-type-logout { color: #e89800; }
+    .ev-type-ok { color: #27ae60; }
+    .ev-error { font-family: var(--mono); font-size: 0.75rem; color: #e74c3c; }
+    .ev-empty { text-align: center; padding: 20px; color: var(--text-secondary); font-size: 0.82rem; }
+    .ev-count { margin-top: 8px; font-size: 0.75rem; color: var(--text-secondary); }
+
+    .scenarios-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+    .scenario-mini { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .sm-icon { font-size: 1.1rem; display: block; margin-bottom: 6px; }
+    .scenario-mini strong { font-size: 0.85rem; display: block; margin-bottom: 6px; }
+    .scenario-mini p { font-size: 0.78rem; color: var(--text-secondary); margin: 0; }
+
+    .concept-box { margin: 20px 0; }
+    .concept-item { display: flex; gap: 16px; align-items: flex-start; padding: 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; }
+    .ci-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .ci-content strong { display: block; margin-bottom: 4px; font-size: 0.88rem; }
+    .ci-content p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+
+    h3 { font-family: var(--font-display); }
+
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .scenarios-grid { grid-template-columns: 1fr; }
+      .ev-filters { flex-direction: column; }
+      .ev-header-row, .ev-row { grid-template-columns: 60px 90px 1fr; }
+      .ev-header-row span:nth-child(n+4), .ev-row span:nth-child(n+4) { display: none; }
+      .concept-item { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</body>
+</html>

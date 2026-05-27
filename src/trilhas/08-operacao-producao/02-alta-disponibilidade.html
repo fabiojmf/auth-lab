@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alta Disponibilidade (Clustering) | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">08 — Operação em Produção</a> → <span>Alta Disponibilidade</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Alta Disponibilidade (Clustering)</h2>
+
+      <p>O Keycloak é o <strong>ponto único de autenticação</strong> de todos os sistemas conectados. Se ele cai, ninguém faz login em nada. Alta disponibilidade não é luxo — é requisito.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🔗</span>
+        <h3>SSO = Single Point of Failure</h3>
+        <p>Se o Keycloak autentica 20 sistemas e fica indisponível, 20 sistemas perdem autenticação simultaneamente.</p>
+      </div>
+
+      <h3>Como o Keycloak forma cluster</h3>
+
+      <p>O clustering do Keycloak é baseado em três pilares:</p>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Banco de dados compartilhado</strong>
+            <p>Todas as instâncias leem/escrevem no mesmo banco. Realms, users, clients — tudo está lá.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Cache distribuído (Infinispan)</strong>
+            <p>Sessões, tokens ativos e login failures são compartilhados via cache in-memory entre nós.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Sticky sessions opcionais (mas recomendadas)</strong>
+            <p>Qualquer instância pode atender qualquer request graças ao cache distribuído. Porém, sticky sessions melhoram performance ao evitar lookups remotos no Infinispan — especialmente durante fluxos de login (auth sessions). Use se possível, mas não é obrigatório.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Camadas de Cache</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>📦 Cache Local</h4>
+          <div class="comp-field">Por instância (não compartilhado)</div>
+          <div class="comp-field">Realm metadata, client configs</div>
+          <div class="comp-field">Invalidado via mensagens do cluster</div>
+          <div class="comp-field">Reduz queries ao banco</div>
+        </div>
+        <div class="comparison-side">
+          <h4>🌐 Cache Distribuído</h4>
+          <div class="comp-field">Compartilhado entre todos os nós</div>
+          <div class="comp-field">User sessions, auth sessions</div>
+          <div class="comp-field">Login failures, action tokens</div>
+          <div class="comp-field">Sincronizado via JGroups (TCP/UDP)</div>
+        </div>
+      </div>
+
+      <h3>Configuração de Cluster</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Opção</th><th>Descrição</th><th>Quando usar</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>--cache=ispn</code></td><td>Usa Infinispan (default em produção)</td><td>Já é o padrão — só precisa se explicitamente desabilitou</td></tr>
+            <tr><td><code>--cache-config-file</code></td><td>XML customizado do Infinispan</td><td>Tuning avançado</td></tr>
+            <tr><td><code>--cache-stack=kubernetes</code></td><td>Discovery via DNS_PING</td><td>Deploy em Kubernetes</td></tr>
+            <tr><td><code>--cache-stack=tcp</code></td><td>TCP com lista de hosts</td><td>Bare metal / VMs</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block"># Kubernetes: discovery automático via DNS
+kc.sh start --cache-stack=kubernetes \
+  --hostname=sso.empresa.com \
+  --db=postgres --db-url=jdbc:postgresql://db:5432/keycloak
+
+# Bare metal: lista explícita de nós
+kc.sh start --cache-stack=tcp \
+  -Djgroups.tcpping.initial_hosts="kc1[7800],kc2[7800],kc3[7800]"</div>
+
+      <h3>Deploy em Kubernetes</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Aspecto</th><th>Recomendação</th><th>Motivo</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Tipo de workload</td><td>Deployment (não StatefulSet)</td><td>Sessões estão no cache/DB, não em disco local</td></tr>
+            <tr><td>Readiness probe</td><td><code>/health/ready</code></td><td>Só recebe tráfego quando pronto</td></tr>
+            <tr><td>Liveness probe</td><td><code>/health/live</code></td><td>Reinicia se o processo travar</td></tr>
+            <tr><td>CPU request</td><td>1-2 cores</td><td>Keycloak é CPU-bound em picos de login</td></tr>
+            <tr><td>Memory request</td><td>1GB - 2GB</td><td>JVM heap + metaspace + Infinispan cache (512MB é insuficiente em produção)</td></tr>
+            <tr><td>HPA</td><td>Scale on CPU > 70%</td><td>Escala horizontal em picos</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Load Balancer</h3>
+
+      <div class="scenario-card">
+        <div class="sc-header">
+          <span class="sc-icon">⚖️</span>
+          <span class="sc-title">Requisitos do Load Balancer</span>
+        </div>
+        <p>• <strong>Sticky sessions:</strong> Opcionais mas recomendadas para performance (cookie <code>KC_AUTH_SESSION_ID</code>)</p>
+        <p>• <strong>Health check:</strong> <code>GET /health/ready</code> (HTTP 200 = saudável)</p>
+        <p>• <strong>WebSocket:</strong> necessário para o Admin Console funcionar</p>
+        <p>• <strong>Algoritmo:</strong> round-robin ou least-connections</p>
+      </div>
+
+      <h3>Rolling Update</h3>
+
+      <p>Durante um rolling update em Kubernetes:</p>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Novo pod sobe</strong>
+            <p>Junta-se ao cluster Infinispan, recebe dados do cache distribuído.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Pod antigo é drenado</strong>
+            <p>Para de receber requests, mas sessões já estão no cache compartilhado.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Usuários não percebem</strong>
+            <p>Sessões sobrevivem porque estão no cache distribuído, não na memória local.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Keycloak clusteriza via banco compartilhado + cache distribuído (Infinispan). Sticky sessions são opcionais mas melhoram performance. Em Kubernetes, use Deployment + <code>--cache-stack=kubernetes</code> e pronto.</p>
+      </div>
+      <nav class="module-nav">
+        <a href="01-arquitetura-deploy.html">← Arquitetura e Deploy</a>
+        <a href="03-proxy-reverso-tls.html">Proxy Reverso e TLS →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    .steps-list { margin: 20px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+    .step-content p { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0; }
+    .scenario-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+    .sc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .sc-icon { font-size: 1.2rem; }
+    .sc-title { font-weight: 600; font-size: 0.95rem; }
+    .scenario-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

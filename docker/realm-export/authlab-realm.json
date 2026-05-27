@@ -1,0 +1,132 @@
+{
+  "realm": "authlab",
+  "enabled": true,
+  "displayName": "AuthLab",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "bruteForceProtected": true,
+  "maxFailureWaitSeconds": 900,
+  "failureFactor": 5,
+  "roles": {
+    "realm": [
+      { "name": "admin", "description": "Acesso administrativo completo" },
+      { "name": "user", "description": "Acesso padrão de usuário" },
+      { "name": "viewer", "description": "Acesso somente leitura" }
+    ],
+    "client": {
+      "app-teste-confidential": [
+        { "name": "manage", "description": "Pode gerenciar recursos" },
+        { "name": "view", "description": "Pode visualizar recursos" }
+      ]
+    }
+  },
+  "users": [
+    {
+      "username": "maria",
+      "enabled": true,
+      "email": "maria@authlab.local",
+      "firstName": "Maria",
+      "lastName": "Silva",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "senha123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin", "user"],
+      "clientRoles": {
+        "app-teste-confidential": ["manage", "view"]
+      }
+    },
+    {
+      "username": "joao",
+      "enabled": true,
+      "email": "joao@authlab.local",
+      "firstName": "João",
+      "lastName": "Santos",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "senha123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user", "viewer"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "app-teste-confidential",
+      "name": "App Teste (Confidential)",
+      "description": "Client confidential para exercícios com backend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "meu-secret-super-seguro",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "redirectUris": ["http://localhost:3000/*", "http://localhost:8081/*"],
+      "webOrigins": ["http://localhost:3000", "http://localhost:8081"],
+      "defaultClientScopes": ["openid", "profile", "email", "roles"],
+      "optionalClientScopes": ["phone", "address", "offline_access"]
+    },
+    {
+      "clientId": "app-teste-public",
+      "name": "App Teste (Public/SPA)",
+      "description": "Client public para exercícios com SPA/React",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:5173/*", "http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:5173", "http://localhost:3000"],
+      "defaultClientScopes": ["openid", "profile", "email", "roles"],
+      "optionalClientScopes": ["phone", "address", "offline_access"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "roles",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true" },
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "realm_roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "client roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "config": {
+            "claim.name": "client_roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

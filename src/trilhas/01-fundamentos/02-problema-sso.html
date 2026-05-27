@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>O problema que o SSO resolve | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">01 — Fundamentos</a> → <span>O problema que o SSO resolve</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>O problema que o SSO resolve</h2>
+
+      <p>Antes de entender o SSO, veja o problema que ele resolve. Alterne entre os dois cenários:</p>
+
+      <div class="interactive-box">
+        <div class="toggle-tabs">
+          <button class="tab active" onclick="showScenario('before')">❌ Sem SSO</button>
+          <button class="tab" onclick="showScenario('after')">✅ Com SSO</button>
+        </div>
+
+        <div class="scenario active" id="scenario-before">
+          <div class="scenario-visual">
+            <div class="scenario-center-node">👤<br><small>Maria</small></div>
+            <div class="scenario-apps-list">
+              <div class="app-item app-item-bad">
+                <span class="app-emoji">📧</span>
+                <span class="app-name">Email</span>
+                <span class="app-cred">maria@email / senha123</span>
+              </div>
+              <div class="app-item app-item-bad">
+                <span class="app-emoji">📊</span>
+                <span class="app-name">ERP</span>
+                <span class="app-cred">maria.silva / Erp@2024</span>
+              </div>
+              <div class="app-item app-item-bad">
+                <span class="app-emoji">📁</span>
+                <span class="app-name">Documentos</span>
+                <span class="app-cred">m.silva / Doc#456!</span>
+              </div>
+              <div class="app-item app-item-bad">
+                <span class="app-emoji">💬</span>
+                <span class="app-name">Chat</span>
+                <span class="app-cred">maria_s / Chat789</span>
+              </div>
+            </div>
+          </div>
+          <div class="scenario-summary scenario-bad">
+            <ul>
+              <li>Múltiplas senhas para lembrar</li>
+              <li>Cada sistema tem sua base de usuários</li>
+              <li>Demitiu? Revogar acesso em N sistemas</li>
+              <li>Sem padrão de segurança</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="scenario" id="scenario-after">
+          <div class="scenario-visual">
+            <div class="scenario-center-node">👤<br><small>Maria</small></div>
+            <div class="scenario-sso-flow">
+              <div class="app-item app-item-sso">
+                <span class="app-emoji">🔐</span>
+                <span class="app-name">SSO (Keycloak)</span>
+                <span class="app-cred app-cred-good">maria@empresa / S3nh@F0rte!</span>
+              </div>
+              <div class="sso-distributes">
+                <div class="sso-app-pill">📧 Email</div>
+                <div class="sso-app-pill">📊 ERP</div>
+                <div class="sso-app-pill">📁 Docs</div>
+                <div class="sso-app-pill">💬 Chat</div>
+              </div>
+            </div>
+          </div>
+          <div class="scenario-summary scenario-good">
+            <ul>
+              <li>Uma senha só, forte e bem protegida</li>
+              <li>Base de usuários centralizada</li>
+              <li>Demitiu? Revoga em um lugar, bloqueia tudo</li>
+              <li>Segurança padronizada (MFA, políticas)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <h3>O que é SSO, afinal?</h3>
+
+      <p><strong>Single Sign-On</strong> = um login, acesso a tudo. O usuário se autentica uma vez no servidor central (o SSO) e ganha acesso a todos os sistemas conectados sem precisar logar novamente.</p>
+
+      <h3>Como funciona na prática</h3>
+
+      <div class="interactive-box">
+        <div class="flow-steps" id="ssoFlow">
+          <div class="flow-step active" data-step="1">
+            <div class="flow-icon">👤</div>
+            <p><strong>1.</strong> Usuário acessa o sistema de Documentos</p>
+          </div>
+          <div class="flow-step" data-step="2">
+            <div class="flow-icon">↗️</div>
+            <p><strong>2.</strong> Sistema redireciona para o SSO (Keycloak)</p>
+          </div>
+          <div class="flow-step" data-step="3">
+            <div class="flow-icon">🔐</div>
+            <p><strong>3.</strong> Usuário digita login e senha no SSO</p>
+          </div>
+          <div class="flow-step" data-step="4">
+            <div class="flow-icon">✅</div>
+            <p><strong>4.</strong> SSO confirma: "É a Maria". Redireciona de volta.</p>
+          </div>
+          <div class="flow-step" data-step="5">
+            <div class="flow-icon">📁</div>
+            <p><strong>5.</strong> Sistema de Documentos recebe a confirmação. Maria está logada.</p>
+          </div>
+          <div class="flow-step" data-step="6">
+            <div class="flow-icon">📊</div>
+            <p><strong>6.</strong> Maria acessa o ERP. O SSO já tem uma sessão ativa dela — entra direto, sem logar de novo.</p>
+            <p><em>Isso é o "Single" do Single Sign-On: uma sessão no SSO vale para todos os sistemas conectados.</em></p>
+          </div>
+        </div>
+        <div class="scene-controls">
+          <button class="btn btn-secondary" id="btnPrevFlow" onclick="prevFlowStep()" disabled>← Anterior</button>
+          <span class="step-indicator" id="flowIndicator">1 / 6</span>
+          <button class="btn" id="btnNextFlow" onclick="nextFlowStep()">Próximo →</button>
+        </div>
+      </div>
+
+      <h3>Onde o Keycloak entra</h3>
+
+      <p>Keycloak é um <strong>servidor SSO open source</strong>. No fluxo acima, ele é quem faz os passos 2, 3 e 4 — recebe o redirect, mostra a tela de login, valida as credenciais e devolve a confirmação. Além disso, ele:</p>
+
+      <ul class="feature-list">
+        <li>Gerencia usuários e suas credenciais em um lugar só</li>
+        <li>Mantém a sessão (por isso o segundo sistema não pede login de novo)</li>
+        <li>Emite tokens — a "prova" de que o usuário logou, que os sistemas confiam</li>
+        <li>Conecta com bases externas (LDAP, Active Directory) para reaproveitar usuários que já existem</li>
+        <li>Suporta MFA, políticas de senha, brute force protection</li>
+      </ul>
+
+      <p>No Keycloak, tudo é organizado em <strong>realms</strong> — espaços isolados que contêm seus próprios usuários, clients e configurações. Pense em um realm como um inquilino (tenant). Cada realm é independente dos demais.</p>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>SSO não é um protocolo — é um conceito. OAuth2 e OIDC são os protocolos que fazem o SSO funcionar. Keycloak é uma implementação desses protocolos.</p>
+      </div>
+
+      <section data-quiz>
+        <h3>🧠 Teste seu entendimento</h3>
+        <script type="application/json">[
+          {"q": "Qual o principal problema que o SSO resolve?", "options": ["Performance de APIs", "Múltiplas credenciais para múltiplos sistemas", "Criptografia de dados"], "answer": 1, "explanation": "SSO = Single Sign-On. Um login, acesso a todos os sistemas conectados."},
+          {"q": "No modelo SSO, onde o usuário digita a senha?", "options": ["Em cada aplicação separadamente", "No Identity Provider (ex: Keycloak)", "No banco de dados"], "answer": 1, "explanation": "O IdP centraliza a autenticação. As aplicações confiam nele via tokens."},
+          {"q": "Se o Keycloak ficar fora do ar, o que acontece?", "options": ["Nada, os tokens continuam válidos", "Ninguém consegue fazer login novo", "Todos são deslogados imediatamente"], "answer": 1, "explanation": "Tokens já emitidos continuam válidos até expirar, mas novos logins ficam impossíveis."}
+        ]</script>
+      </section>
+
+      <nav class="module-nav">
+        <a href="01-autenticacao-vs-autorizacao.html">← Módulo anterior</a>
+        <a href="03-oauth2-oidc.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    // Scenario toggle
+    function showScenario(which) {
+      document.querySelectorAll('.scenario').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(`scenario-${which}`).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // Flow steps
+    let flowStep = 1;
+    const totalFlowSteps = 6;
+
+    function showFlowStep(n) {
+      document.querySelectorAll('.flow-step').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.flow-step[data-step="${n}"]`).classList.add('active');
+      document.getElementById('flowIndicator').textContent = `${n} / ${totalFlowSteps}`;
+      document.getElementById('btnPrevFlow').disabled = n === 1;
+      document.getElementById('btnNextFlow').disabled = n === totalFlowSteps;
+    }
+
+    function nextFlowStep() {
+      if (flowStep < totalFlowSteps) { flowStep++; showFlowStep(flowStep); }
+    }
+
+    function prevFlowStep() {
+      if (flowStep > 1) { flowStep--; showFlowStep(flowStep); }
+    }
+  </script>
+  <style>
+    .toggle-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+    .tab { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 20px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); transition: all var(--transition); flex: 1; text-align: center; font-family: var(--font-display); }
+    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .tab:hover:not(.active) { border-color: var(--accent); }
+
+    .scenario { display: none; }
+    .scenario.active { display: block; }
+
+    .scenario-visual { display: flex; align-items: center; gap: 24px; margin-bottom: 20px; }
+    .scenario-center-node { font-size: 1.8rem; text-align: center; line-height: 1.2; }
+    .scenario-center-node small { font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-display); }
+
+    .scenario-apps-list, .scenario-sso-flow { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+    .app-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); }
+    .app-item-bad { border-left: 3px solid #e74c3c; }
+    .app-item-sso { border-left: 3px solid var(--accent); background: var(--accent-glow); }
+    .app-emoji { font-size: 1.1rem; }
+    .app-name { font-family: var(--font-display); font-size: 0.85rem; font-weight: 600; min-width: 80px; }
+    .app-cred { font-family: var(--mono); font-size: 0.75rem; color: var(--text-secondary); }
+    .app-cred-good { color: var(--accent); }
+
+    .sso-distributes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding-left: 4px; }
+    .sso-app-pill { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 0.75rem; font-family: var(--font-display); font-weight: 500; }
+
+    .scenario-summary { padding: 16px 20px; border-radius: 8px; }
+    .scenario-summary ul { list-style: none; padding: 0; }
+    .scenario-summary li { padding: 4px 0; font-size: 0.85rem; color: var(--text-secondary); }
+    .scenario-summary li::before { margin-right: 8px; }
+    .scenario-bad { background: rgba(231, 76, 60, 0.05); border: 1px solid rgba(231, 76, 60, 0.15); }
+    .scenario-bad li::before { content: '✗'; color: #e74c3c; }
+    .scenario-good { background: var(--accent-glow); border: 1px solid rgba(212, 83, 10, 0.2); }
+    .scenario-good li::before { content: '✓'; color: var(--accent); }
+
+    .flow-steps { min-height: 100px; display: flex; align-items: center; justify-content: center; }
+    .flow-step { display: none; text-align: center; padding: 0 12px; }
+    .flow-step.active { display: block; }
+    .flow-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .flow-step p { color: var(--text-secondary); margin-bottom: 6px; }
+    .flow-step em { color: var(--accent); font-size: 0.85rem; }
+
+    .scene-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .step-indicator { font-size: 0.85rem; color: var(--text-secondary); min-width: 40px; text-align: center; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .feature-list { padding-left: 20px; margin: 16px 0; }
+    .feature-list li { padding: 4px 0; color: var(--text-secondary); font-size: 0.9rem; }
+
+    @media (max-width: 640px) {
+      .scenario-visual { flex-direction: column; gap: 16px; }
+      .app-cred { display: none; }
+      .app-name { min-width: auto; }
+      .sso-distributes { justify-content: center; }
+      .toggle-tabs { flex-direction: row; }
+      .tab { padding: 8px 12px; font-size: 0.8rem; }
+    }
+  </style>
+</body>
+</html>

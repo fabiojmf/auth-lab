@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoramento e Métricas | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">08 — Operação em Produção</a> → <span>Monitoramento e Métricas</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Monitoramento e Métricas</h2>
+
+      <p>Você não pode corrigir o que não consegue ver. Monitoramento é o que separa "o Keycloak caiu e ninguém sabe por quê" de "detectamos o problema antes dos usuários reclamarem".</p>
+
+      <div class="core-question">
+        <span class="cq-icon">📊</span>
+        <h3>Observabilidade desde o dia 1</h3>
+        <p>Habilite health checks e métricas antes de ir para produção. Não depois do primeiro incidente.</p>
+      </div>
+
+      <h3>Health Endpoints</h3>
+
+      <p>O Keycloak expõe endpoints de saúde prontos para uso com orquestradores (Kubernetes, ECS, etc.):</p>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Endpoint</th><th>Pergunta que responde</th><th>Uso típico</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/health/ready</code></td><td>KC está pronto para receber requests?</td><td>Readiness probe (K8s)</td></tr>
+            <tr><td><code>/health/live</code></td><td>O processo está vivo?</td><td>Liveness probe (K8s)</td></tr>
+            <tr><td><code>/health/started</code></td><td>O startup terminou?</td><td>Startup probe (K8s)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block"># Habilitar health endpoints
+kc.sh start --health-enabled=true
+
+# Testar (KC 20-24: porta 8080, KC 25+: porta 9000 — management interface separada)
+curl http://localhost:9000/health/ready
+# {"status": "UP", "checks": [{"name": "Database", "status": "UP"}]}
+
+# Se estiver em KC 20-24 (antes da management interface):
+# curl http://localhost:8080/health/ready</div>
+
+      <h3>Métricas (Prometheus)</h3>
+
+      <p>Com <code>--metrics-enabled=true</code>, o Keycloak expõe métricas no formato Prometheus/OpenMetrics em <code>/metrics</code> (porta 9000 no KC 25+, porta 8080 no KC 20-24). As métricas de eventos (logins, erros) requerem que o event listener <code>metrics-listener</code> esteja habilitado no realm:</p>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Métrica</th><th>Tipo</th><th>O que indica</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>keycloak_logins</code></td><td>Counter</td><td>Total de logins (por realm, client)</td></tr>
+            <tr><td><code>keycloak_login_errors</code></td><td>Counter</td><td>Falhas de login (por tipo de erro)</td></tr>
+            <tr><td><code>keycloak_registrations</code></td><td>Counter</td><td>Novos registros de usuários</td></tr>
+            <tr><td><code>keycloak_refresh_tokens</code></td><td>Counter</td><td>Tokens renovados</td></tr>
+            <tr><td><code>jvm_memory_used_bytes</code></td><td>Gauge</td><td>Uso de memória da JVM</td></tr>
+            <tr><td><code>jvm_gc_pause_seconds</code></td><td>Summary</td><td>Pausas do Garbage Collector</td></tr>
+            <tr><td><code>http_server_requests_seconds</code></td><td>Histogram</td><td>Latência de requests HTTP</td></tr>
+            <tr><td><code>agroal_active_count</code></td><td>Gauge</td><td>Conexões ativas no pool do DB</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block"># Habilitar métricas
+kc.sh start --metrics-enabled=true
+
+# Coletar métricas (KC 25+: porta 9000; KC 20-24: porta 8080)
+curl http://localhost:9000/metrics
+
+# Para métricas de eventos (logins, erros), habilite no realm:
+# Admin Console → Realm Settings → Events → Event Listeners → adicionar "metrics-listener"
+#
+# keycloak_logins_total{realm="meu-realm",client_id="app-web"} 1523
+# keycloak_login_errors_total{realm="meu-realm",error="invalid_user_credentials"} 47</div>
+
+      <h3>Logging</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Opção</th><th>Valor</th><th>Quando usar</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>--log</code></td><td><code>console</code></td><td>Containers (stdout → log collector)</td></tr>
+            <tr><td><code>--log</code></td><td><code>file</code></td><td>VMs com rotação de arquivo</td></tr>
+            <tr><td><code>--log-console-output</code></td><td><code>json</code></td><td>Agregação (ELK, Loki, CloudWatch)</td></tr>
+            <tr><td><code>--log-level</code></td><td><code>INFO</code></td><td>Produção (default)</td></tr>
+            <tr><td><code>--log-level</code></td><td><code>org.keycloak:DEBUG</code></td><td>Troubleshooting temporário</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block"># Logging JSON para containers
+kc.sh start --log=console --log-console-output=json --log-level=INFO
+
+# Output:
+# {"timestamp":"2024-01-15T10:30:00Z","level":"INFO","message":"Login successful","realm":"prod","clientId":"app-web"}</div>
+
+      <h3>Alertas Recomendados</h3>
+
+      <div class="scenario-card">
+        <div class="sc-header">
+          <span class="sc-icon">🚨</span>
+          <span class="sc-title">Alertas que você deve configurar</span>
+        </div>
+        <p>• <strong>Login error rate spike:</strong> aumento súbito em <code>keycloak_login_errors</code> → possível ataque</p>
+        <p>• <strong>Health endpoint down:</strong> <code>/health/ready</code> retornando não-200 → instância com problema</p>
+        <p>• <strong>DB pool exhausted:</strong> <code>agroal_active_count</code> = max → queries lentas ou leak</p>
+        <p>• <strong>High GC pause:</strong> <code>jvm_gc_pause_seconds</code> > 1s → precisa de mais memória</p>
+        <p>• <strong>HTTP latency P99 > 2s:</strong> degradação de performance</p>
+      </div>
+
+      <h3>Stack de Observabilidade</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>📈 Métricas</h4>
+          <div class="comp-field">Keycloak → <code>/metrics</code></div>
+          <div class="comp-field">Prometheus (coleta)</div>
+          <div class="comp-field">Grafana (dashboards)</div>
+          <div class="comp-field">AlertManager (alertas)</div>
+        </div>
+        <div class="comparison-side">
+          <h4>📝 Logs</h4>
+          <div class="comp-field">Keycloak → JSON stdout</div>
+          <div class="comp-field">Fluentd / Filebeat (coleta)</div>
+          <div class="comp-field">Elasticsearch / Loki (armazena)</div>
+          <div class="comp-field">Kibana / Grafana (busca)</div>
+        </div>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Habilite <code>--health-enabled=true</code> e <code>--metrics-enabled=true</code> desde o dia 1. Você não pode corrigir o que não consegue ver. Grafana + Prometheus é o stack padrão para métricas do Keycloak.</p>
+      </div>
+      <nav class="module-nav">
+        <a href="03-proxy-reverso-tls.html">← Proxy Reverso e TLS</a>
+        <a href="05-backup-recovery.html">Backup e Recovery →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    .scenario-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+    .sc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .sc-icon { font-size: 1.2rem; }
+    .sc-title { font-weight: 600; font-size: 0.95rem; }
+    .scenario-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

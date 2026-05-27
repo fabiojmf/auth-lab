@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>O que é OAuth2 e OIDC | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">01 — Fundamentos</a> → <span>O que é OAuth2 e OIDC</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>O que é OAuth2 e OIDC</h2>
+
+      <p>São dois protocolos que trabalham juntos. Pense neles como camadas:</p>
+
+      <div class="layers-diagram">
+        <div class="layer layer-oidc">
+          <span class="layer-label">OpenID Connect (OIDC)</span>
+          <span class="layer-desc">Identidade — "quem é o usuário"</span>
+        </div>
+        <div class="layer layer-oauth">
+          <span class="layer-label">OAuth 2.0</span>
+          <span class="layer-desc">Delegação de acesso — "o que o app pode fazer em nome do usuário"</span>
+        </div>
+        <div class="layer layer-http">
+          <span class="layer-label">HTTP / TLS</span>
+          <span class="layer-desc">Transporte</span>
+        </div>
+      </div>
+
+      <p>OIDC é construído <strong>em cima</strong> do OAuth2. Não são concorrentes — são complementares.</p>
+
+      <h3>OAuth2: a analogia do manobrista</h3>
+
+      <div class="interactive-box">
+        <div class="flow-steps" id="oauthAnalogy">
+          <div class="flow-step active" data-step="1">
+            <div class="flow-icon">🚗</div>
+            <p><strong>Você chega a um restaurante com manobrista.</strong></p>
+            <p>Você quer que ele estacione seu carro, mas não quer dar acesso total a ele.</p>
+          </div>
+          <div class="flow-step" data-step="2">
+            <div class="flow-icon">🔑</div>
+            <p><strong>Você entrega a chave do manobrista.</strong></p>
+            <p>Essa chave especial só liga o carro e anda. Não abre o porta-malas, não acessa o GPS.</p>
+          </div>
+          <div class="flow-step" data-step="3">
+            <div class="flow-icon">✅</div>
+            <p><strong>Isso é OAuth2.</strong></p>
+            <p>Você (dono do recurso) autoriza alguém (aplicação) a acessar algo seu (dados) com permissões limitadas (scopes), sem entregar sua senha.</p>
+          </div>
+        </div>
+        <div class="scene-controls">
+          <button class="btn btn-secondary" id="btnPrev1" onclick="prevStep('oauthAnalogy')" disabled>← Anterior</button>
+          <span class="step-indicator" id="indicator-oauthAnalogy">1 / 3</span>
+          <button class="btn" id="btnNext1" onclick="nextStep('oauthAnalogy')">Próximo →</button>
+        </div>
+      </div>
+
+      <h3>OAuth2 em termos técnicos</h3>
+
+      <p>Vamos expandir a analogia. No restaurante, na verdade existem 4 personagens:</p>
+
+      <div class="roles-grid">
+        <div class="role-card">
+          <div class="role-icon">👤</div>
+          <h4>Resource Owner</h4>
+          <p>Você. O dono do carro. Decide se autoriza ou não.</p>
+        </div>
+        <div class="role-card">
+          <div class="role-icon">💻</div>
+          <h4>Client</h4>
+          <p>O manobrista. Quer acesso ao seu carro (seus dados).</p>
+        </div>
+        <div class="role-card">
+          <div class="role-icon">🔐</div>
+          <h4>Authorization Server</h4>
+          <p>O restaurante que emite a chave especial (token). No nosso mundo: o Keycloak.</p>
+        </div>
+        <div class="role-card">
+          <div class="role-icon">📦</div>
+          <h4>Resource Server</h4>
+          <p>O estacionamento. Guarda o carro (seus dados) e só libera com a chave certa.</p>
+        </div>
+      </div>
+
+      <p>Exemplo concreto: você usa um app de agenda (Client) que precisa ler seus emails (Resource Server). O app te redireciona para o Google (Authorization Server), você autoriza, e o app recebe um token que só permite ler emails — não deletar, não enviar.</p>
+
+      <h3>O fluxo OAuth2 visualizado</h3>
+
+      <p>Os 4 papéis acima interagem em uma sequência definida. O diagrama abaixo mostra essa conversa passo a passo — é o mesmo cenário do manobrista, agora em linguagem técnica:</p>
+
+      <div class="interactive-box oauth-flow-diagram">
+        <div class="flow-diagram">
+          <div class="flow-col flow-left">
+            <div class="flow-entity">
+              <div class="entity-icon">💻</div>
+              <div class="entity-label">Client</div>
+            </div>
+          </div>
+          <div class="flow-col flow-center">
+            <div class="flow-messages" id="flowMessages">
+              <div class="flow-msg" data-step="1">
+                <div class="msg-arrow arrow-right">1. Authorization request →</div>
+              </div>
+              <div class="flow-msg" data-step="2">
+                <div class="msg-arrow arrow-left">← 2. Authorization grant</div>
+              </div>
+              <div class="flow-msg" data-step="3">
+                <div class="msg-arrow arrow-right">3. Authorization grant →</div>
+              </div>
+              <div class="flow-msg" data-step="4">
+                <div class="msg-arrow arrow-left">← 4. Access token</div>
+              </div>
+              <div class="flow-msg" data-step="5">
+                <div class="msg-arrow arrow-right">5. Access token →</div>
+              </div>
+              <div class="flow-msg" data-step="6">
+                <div class="msg-arrow arrow-left">← 6. Protected resource</div>
+              </div>
+            </div>
+          </div>
+          <div class="flow-col flow-right">
+            <div class="flow-entity" id="targetEntity">
+              <div class="entity-icon">👤</div>
+              <div class="entity-label">Resource Owner</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-explanation" id="flowExplanation">
+          <p>Clique em "Próximo" para iniciar o fluxo.</p>
+        </div>
+
+        <div class="scene-controls">
+          <button class="btn btn-secondary" id="btnPrevDiagram" onclick="prevDiagramStep()" disabled>← Anterior</button>
+          <span class="step-indicator" id="diagramIndicator">0 / 6</span>
+          <button class="btn" id="btnNextDiagram" onclick="nextDiagramStep()">Próximo →</button>
+        </div>
+      </div>
+
+      <h3>E o OIDC? Por que não basta o OAuth2?</h3>
+
+      <p>O OAuth2 foi criado para <strong>autorização</strong>: "esse app pode acessar meus dados?". Mas ele não responde: "quem é esse usuário?". Imagine:</p>
+
+      <p>Um app recebe um access_token do Google. Ele sabe que pode acessar os emails. Mas <em>de quem</em> são esses emails? O OAuth2 puro não garante isso.</p>
+
+      <p>O <strong>OIDC</strong> (OpenID Connect) resolve adicionando um token extra — o <code>id_token</code> — que carrega a identidade do usuário:</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>OAuth2 puro</h4>
+          <ul>
+            <li>Emite <code>access_token</code></li>
+            <li>"Esse app pode acessar recurso X"</li>
+            <li>Não diz quem é o usuário</li>
+            <li>Protocolo de <strong>autorização</strong></li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>OAuth2 + OIDC</h4>
+          <ul>
+            <li>Emite <code>access_token</code> + <code>id_token</code></li>
+            <li>"Esse app pode acessar recurso X, e o usuário é o João"</li>
+            <li>Garante a identidade</li>
+            <li>Protocolo de <strong>autenticação</strong> + autorização</li>
+          </ul>
+        </div>
+      </div>
+
+      <p>Na prática, quase todo mundo usa OIDC (que inclui OAuth2). Quando alguém diz "usamos OAuth2 para login", na verdade está usando OIDC.</p>
+
+      <h3>Os 3 tokens</h3>
+
+      <p>Quando o login acontece, o Keycloak pode emitir até 3 tokens. Cada um tem uma função:</p>
+
+      <div class="tokens-list">
+        <div class="token-item">
+          <div class="token-name">access_token</div>
+          <div class="token-desc"><strong>O passaporte.</strong> Você apresenta ele para acessar APIs. Tem vida curta (5-30 minutos) porque se alguém roubar, o estrago é limitado.</div>
+        </div>
+        <div class="token-item">
+          <div class="token-name">id_token</div>
+          <div class="token-desc"><strong>O RG digital.</strong> Contém nome, email, identificador do usuário. A aplicação usa para saber quem logou. Não serve para acessar APIs.</div>
+        </div>
+        <div class="token-item">
+          <div class="token-name">refresh_token</div>
+          <div class="token-desc"><strong>O renovador.</strong> Quando o access_token expira, o refresh_token pega um novo sem o usuário precisar logar de novo. Vida longa (horas/dias).</div>
+        </div>
+      </div>
+
+      <h3>Scopes: controlando o que vai no token</h3>
+
+      <p>Quando a aplicação pede um token, ela declara quais <strong>scopes</strong> precisa. É como dizer: "preciso saber o nome e email do usuário, mais nada". Clique nos scopes abaixo para ver o que cada um adiciona ao token:</p>
+
+      <div class="interactive-box">
+        <div class="scopes-demo">
+          <div class="scope-tag" onclick="toggleScope(this)" data-active="true">openid</div>
+          <div class="scope-tag" onclick="toggleScope(this)" data-active="true">profile</div>
+          <div class="scope-tag" onclick="toggleScope(this)" data-active="false">email</div>
+          <div class="scope-tag" onclick="toggleScope(this)" data-active="false">roles</div>
+        </div>
+        <div class="scopes-result" id="scopesResult">
+          <p><strong>Com esses scopes, o token conterá:</strong></p>
+          <ul id="scopesList">
+            <li>✓ Identificador do usuário (sub)</li>
+            <li>✓ Nome completo</li>
+          </ul>
+        </div>
+      </div>
+
+      <p>O scope <code>openid</code> é obrigatório para OIDC — sem ele, não é OIDC, é OAuth2 puro. Os scopes <code>profile</code> e <code>email</code> também são padrão OIDC. Já o scope <code>roles</code> é específico do Keycloak (não faz parte do padrão). Os scopes são configurados no Keycloak pelo administrador; o desenvolvedor da aplicação escolhe quais pedir no momento do login.</p>
+
+      <div class="key-takeaway">
+        <h4>💡 Resumo</h4>
+        <p><strong>OAuth2</strong> = "esse app pode acessar seus dados?" (autorização)<br>
+        <strong>OIDC</strong> = "e quem é esse usuário?" (identidade, em cima do OAuth2)<br>
+        <strong>Tokens</strong> = access (passaporte), id (RG), refresh (renovador)<br>
+        <strong>Scopes</strong> = o que a aplicação está pedindo<br>
+        <strong>Keycloak</strong> = o servidor que orquestra tudo isso</p>
+      </div>
+
+      <section data-quiz>
+        <h3>🧠 Teste seu entendimento</h3>
+        <script type="application/json">[
+          {"q": "OAuth2 é um protocolo de:", "options": ["Autenticação", "Autorização (delegação de acesso)", "Criptografia"], "answer": 1, "explanation": "OAuth2 é sobre delegação de acesso. OIDC adiciona a camada de autenticação em cima."},
+          {"q": "Qual a diferença entre OAuth2 e OIDC?", "options": ["São a mesma coisa", "OIDC adiciona identidade (id_token) sobre o OAuth2", "OAuth2 é mais novo"], "answer": 1, "explanation": "OIDC = OAuth2 + camada de identidade. Adiciona o id_token e o endpoint userinfo."},
+          {"q": "O access_token serve para:", "options": ["Identificar o usuário", "Acessar recursos protegidos (APIs)", "Fazer login"], "answer": 1, "explanation": "O access_token é apresentado às APIs para provar que tem permissão de acesso."}
+        ]</script>
+      </section>
+
+      <nav class="module-nav">
+        <a href="02-problema-sso.html">← Módulo anterior</a>
+        <a href="04-anatomia-jwt.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    // Step navigation
+    const stepStates = {};
+
+    function getState(id) {
+      if (!stepStates[id]) {
+        const steps = document.querySelectorAll(`#${id} .flow-step`);
+        stepStates[id] = { current: 1, total: steps.length };
+      }
+      return stepStates[id];
+    }
+
+    function showStepFor(id) {
+      const state = getState(id);
+      document.querySelectorAll(`#${id} .flow-step`).forEach(el => el.classList.remove('active'));
+      document.querySelector(`#${id} [data-step="${state.current}"]`).classList.add('active');
+      document.getElementById(`indicator-${id}`).textContent = `${state.current} / ${state.total}`;
+      // Update buttons
+      const container = document.getElementById(id).closest('.interactive-box');
+      const prev = container.querySelector('[id^="btnPrev"]');
+      const next = container.querySelector('[id^="btnNext"]');
+      if (prev) prev.disabled = state.current === 1;
+      if (next) next.disabled = state.current === state.total;
+    }
+
+    function nextStep(id) {
+      const state = getState(id);
+      if (state.current < state.total) { state.current++; showStepFor(id); }
+    }
+
+    function prevStep(id) {
+      const state = getState(id);
+      if (state.current > 1) { state.current--; showStepFor(id); }
+    }
+
+    // OAuth Flow Diagram
+    let diagramStep = 0;
+    const totalDiagramSteps = 6;
+    const diagramExplanations = [
+      'Clique em "Próximo" para iniciar o fluxo.',
+      '<strong>1.</strong> O Client pede autorização ao Resource Owner: "Posso acessar seus emails?"',
+      '<strong>2.</strong> O Resource Owner autoriza: "Sim, pode." Na prática, isso acontece quando o usuário clica "Autorizar" na tela do Keycloak. O tipo de resposta depende do fluxo usado.',
+      '<strong>3.</strong> O Client leva essa autorização ao Authorization Server: "O usuário me autorizou, me dá um token."',
+      '<strong>4.</strong> O Authorization Server valida e emite um access_token para o Client.',
+      '<strong>5.</strong> O Client apresenta o access_token ao Resource Server: "Tenho permissão, me dá os dados."',
+      '<strong>6.</strong> O Resource Server valida o token e entrega o recurso protegido (os emails).'
+    ];
+    const diagramTargets = ['👤\nResource Owner', '👤\nResource Owner', '👤\nResource Owner', '🔐\nAuth Server', '🔐\nAuth Server', '📦\nResource Server', '📦\nResource Server'];
+
+    function updateDiagram() {
+      document.querySelectorAll('.flow-msg').forEach(el => {
+        const step = parseInt(el.getAttribute('data-step'));
+        el.classList.toggle('visible', step <= diagramStep);
+        el.classList.toggle('current', step === diagramStep);
+      });
+      document.getElementById('flowExplanation').innerHTML = `<p>${diagramExplanations[diagramStep]}</p>`;
+      document.getElementById('diagramIndicator').textContent = `${diagramStep} / ${totalDiagramSteps}`;
+      document.getElementById('btnPrevDiagram').disabled = diagramStep === 0;
+      document.getElementById('btnNextDiagram').disabled = diagramStep === totalDiagramSteps;
+
+      // Update right entity
+      const target = diagramTargets[diagramStep];
+      const [icon, label] = target.split('\n');
+      const entity = document.getElementById('targetEntity');
+      entity.querySelector('.entity-icon').textContent = icon;
+      entity.querySelector('.entity-label').textContent = label;
+    }
+
+    function nextDiagramStep() {
+      if (diagramStep < totalDiagramSteps) { diagramStep++; updateDiagram(); }
+    }
+
+    function prevDiagramStep() {
+      if (diagramStep > 0) { diagramStep--; updateDiagram(); }
+    }
+
+    // Scopes demo
+    const scopeData = {
+      'openid': ['Identificador do usuário (sub)'],
+      'profile': ['Nome completo', 'Username'],
+      'email': ['Endereço de email', 'Email verificado?'],
+      'roles': ['Roles do usuário (admin, viewer...)']
+    };
+
+    function toggleScope(el) {
+      const active = el.getAttribute('data-active') === 'true';
+      el.setAttribute('data-active', !active);
+      el.classList.toggle('active');
+      updateScopes();
+    }
+
+    function updateScopes() {
+      const list = document.getElementById('scopesList');
+      const items = [];
+      document.querySelectorAll('.scope-tag').forEach(tag => {
+        if (tag.getAttribute('data-active') === 'true') {
+          const scope = tag.textContent;
+          if (scopeData[scope]) {
+            scopeData[scope].forEach(item => items.push(`<li>✓ ${item}</li>`));
+          }
+        }
+      });
+      list.innerHTML = items.length ? items.join('') : '<li style="color: var(--text-secondary)">Nenhum scope selecionado</li>';
+    }
+
+    // Init scopes
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.scope-tag[data-active="true"]').forEach(el => el.classList.add('active'));
+      updateScopes();
+    });
+  </script>
+  <style>
+    .layers-diagram { margin: 24px 0; display: flex; flex-direction: column; gap: 4px; }
+    .layer { padding: 16px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .layer-oidc { background: rgba(41, 151, 255, 0.1); border: 1px solid rgba(41, 151, 255, 0.3); }
+    .layer-oauth { background: rgba(41, 151, 255, 0.05); border: 1px solid rgba(41, 151, 255, 0.15); }
+    .layer-http { background: var(--bg-secondary); border: 1px solid var(--border); }
+    .layer-label { font-weight: 600; font-size: 0.9rem; }
+    .layer-desc { font-size: 0.8rem; color: var(--text-secondary); }
+
+    .flow-steps { min-height: 100px; display: flex; align-items: center; justify-content: center; }
+    .flow-step { display: none; text-align: center; }
+    .flow-step.active { display: block; }
+    .flow-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .flow-step p { color: var(--text-secondary); margin-bottom: 6px; }
+
+    .scene-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .step-indicator { font-size: 0.85rem; color: var(--text-secondary); min-width: 40px; text-align: center; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .roles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 20px 0; }
+
+    /* OAuth Flow Diagram */
+    .oauth-flow-diagram { padding: 24px; }
+    .flow-diagram { display: flex; align-items: stretch; gap: 0; min-height: 260px; }
+    .flow-col { display: flex; flex-direction: column; justify-content: center; }
+    .flow-left, .flow-right { min-width: 100px; align-items: center; }
+    .flow-center { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 0 12px; }
+    .flow-entity { text-align: center; }
+    .entity-icon { font-size: 2rem; margin-bottom: 4px; }
+    .entity-label { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); }
+
+    .flow-msg { opacity: 0.15; transition: opacity 0.3s ease; padding: 4px 0; }
+    .flow-msg.visible { opacity: 1; }
+    .flow-msg.current { opacity: 1; }
+    .flow-msg.current .msg-arrow { color: var(--accent); font-weight: 600; }
+
+    .msg-arrow { font-size: 0.9rem; color: var(--text-secondary); white-space: nowrap; text-align: center; padding: 8px 16px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border); }
+    .arrow-right { text-align: right; }
+    .arrow-left { text-align: left; }
+    .flow-msg.current .msg-arrow { background: rgba(41, 151, 255, 0.08); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .flow-msg.current .msg-arrow { background: rgba(41, 151, 255, 0.08); }
+
+    .flow-explanation { margin-top: 20px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; min-height: 60px; }
+    .flow-explanation p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+
+    .flow-right .flow-entity { transition: all 0.3s ease; }
+
+    .roles-grid {  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 20px 0; }
+    .role-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+    .role-icon { font-size: 1.8rem; margin-bottom: 8px; }
+    .role-card h4 { font-size: 0.85rem; margin-bottom: 4px; }
+    .role-card p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+
+    .tokens-list { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+    .token-item { display: flex; gap: 16px; align-items: baseline; padding: 12px 16px; background: var(--bg-secondary); border-radius: 8px; }
+    .token-name { font-family: var(--mono); font-size: 0.85rem; font-weight: 600; color: var(--accent); min-width: 120px; }
+    .token-desc { font-size: 0.85rem; color: var(--text-secondary); }
+
+    .scopes-demo { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .scope-tag { font-family: var(--mono); font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border); cursor: pointer; transition: all var(--transition); color: var(--text-secondary); }
+    .scope-tag.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .scope-tag:hover:not(.active) { border-color: var(--accent); color: var(--text-primary); }
+    .scopes-result { padding-top: 12px; border-top: 1px solid var(--border); }
+    .scopes-result p { font-size: 0.85rem; margin-bottom: 8px; }
+    .scopes-result ul { list-style: none; padding: 0; }
+    .scopes-result li { font-size: 0.85rem; color: var(--text-secondary); padding: 3px 0; }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .scene-controls .btn { padding: 8px 12px; font-size: 0.75rem; }
+      .roles-grid { grid-template-columns: 1fr 1fr; }
+      .tokens-list .token-item { flex-direction: column; gap: 4px; }
+      .tokens-list .token-name { min-width: auto; }
+    }
+  </style>
+</body>
+</html>

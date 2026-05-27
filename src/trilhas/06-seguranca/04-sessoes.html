@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciamento de Sessões | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">06 — Segurança e Políticas</a> → <span>Gerenciamento de Sessões</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Gerenciamento de Sessões</h2>
+
+      <p>Uma sessão no Keycloak é o <strong>registro server-side</strong> de que um usuário está autenticado. Entender a hierarquia de sessões e seus timeouts é fundamental para evitar comportamentos inesperados de logout e expiração.</p>
+
+      <h3>SSO Session vs Client Session</h3>
+
+      <div class="hierarchy-diagram">
+        <div class="h-level h-level-1">
+          <div class="h-box h-sso">
+            <strong>🔐 SSO Session</strong>
+            <p>Uma por login do usuário no realm. Compartilhada entre todos os clients.</p>
+          </div>
+          <div class="h-children">
+            <div class="h-level h-level-2">
+              <div class="h-box h-client">
+                <strong>📱 Client Session: app-frontend</strong>
+                <p>Criada quando o usuário acessou este client</p>
+              </div>
+            </div>
+            <div class="h-level h-level-2">
+              <div class="h-box h-client">
+                <strong>📱 Client Session: app-admin</strong>
+                <p>Criada quando o usuário acessou este client</p>
+              </div>
+            </div>
+            <div class="h-level h-level-2">
+              <div class="h-box h-client">
+                <strong>📱 Client Session: api-backend</strong>
+                <p>Criada quando o usuário acessou este client</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p>Quando o usuário faz login uma vez e acessa 3 aplicações, existe <strong>1 SSO Session</strong> e <strong>3 Client Sessions</strong>.</p>
+
+      <h3>Timeouts — a hierarquia de duração</h3>
+
+      <p>Configuração em: <strong>Realm Settings → Sessions</strong> e <strong>Realm Settings → Tokens</strong></p>
+
+      <div class="interactive-box">
+        <div class="timeout-visual">
+          <div class="tv-bar tv-sso-max">
+            <span class="tv-label">SSO Session Max (10h default)</span>
+            <div class="tv-inner tv-sso-idle">
+              <span class="tv-label">SSO Session Idle (30min default)</span>
+            </div>
+          </div>
+          <div class="tv-bar tv-refresh" style="width: 100%;">
+            <span class="tv-label">Refresh Token (= SSO Session restante) — O refresh token não tem um 'lifespan' próprio configurável — ele expira quando a SSO Session expira (idle ou max). A hierarquia real é: SSO Session Max ≥ SSO Session Idle > Access Token Lifespan.</span>
+          </div>
+          <div class="tv-bar tv-access">
+            <span class="tv-label">Access Token Lifespan (5min default)</span>
+          </div>
+        </div>
+        <p class="tv-legend">↑ Maior duração no topo, menor embaixo. O access token é o mais curto.</p>
+      </div>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Timeout</th>
+              <th>O que controla</th>
+              <th>Default</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>SSO Session Idle</code></td>
+              <td>Tempo sem atividade antes da sessão SSO expirar</td>
+              <td>30 min</td>
+            </tr>
+            <tr>
+              <td><code>SSO Session Max</code></td>
+              <td>Tempo máximo total da sessão SSO (independente de atividade)</td>
+              <td>10 horas</td>
+            </tr>
+            <tr>
+              <td><code>Client Session Idle</code></td>
+              <td>Idle timeout por client (se diferente do SSO)</td>
+              <td>Herda do SSO</td>
+            </tr>
+            <tr>
+              <td><code>Client Session Max</code></td>
+              <td>Max lifetime por client</td>
+              <td>Herda do SSO</td>
+            </tr>
+            <tr>
+              <td><code>Access Token Lifespan</code></td>
+              <td>Validade do access_token</td>
+              <td>5 min</td>
+            </tr>
+            <tr>
+              <td><code>Refresh Token Max Reuse</code></td>
+              <td>Quantas vezes um refresh token pode ser reutilizado</td>
+              <td>0 (uso único)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>⏱️ Regra de ouro</h4>
+        <p><strong>SSO Session Max > SSO Session Idle > Refresh Token > Access Token</strong><br>
+        Se o access token expira em 5 min, o app usa o refresh token para obter um novo. Se o refresh token expirou, o usuário precisa re-autenticar (mas se a SSO session ainda está ativa, é transparente).</p>
+      </div>
+
+      <h3>Tipos de Logout</h3>
+
+      <div class="comparison three-col">
+        <div class="comparison-side">
+          <h4>👤 User-initiated</h4>
+          <div class="comp-field">Usuário clica "Sair"</div>
+          <div class="comp-field">App redireciona para o endpoint de logout do Keycloak</div>
+          <div class="comp-field">Keycloak invalida a SSO Session</div>
+        </div>
+        <div class="comparison-side">
+          <h4>👨‍💼 Admin-initiated</h4>
+          <div class="comp-field">Admin revoga sessão pelo console</div>
+          <div class="comp-field">Users → usuário → Sessions → "Sign out"</div>
+          <div class="comp-field">Ou Sessions menu → revogar todas</div>
+        </div>
+        <div class="comparison-side">
+          <h4>⏰ Timeout</h4>
+          <div class="comp-field">Sessão expira naturalmente</div>
+          <div class="comp-field">Idle timeout ou Max lifetime atingido</div>
+          <div class="comp-field">Próximo request falha silenciosamente</div>
+        </div>
+      </div>
+
+      <p><strong>Dica:</strong> para logout OIDC correto, a aplicação deve enviar <code>id_token_hint</code> e <code>post_logout_redirect_uri</code> ao endpoint de logout. Sem <code>id_token_hint</code>, o Keycloak pode pedir confirmação ao usuário antes de encerrar a sessão.</p>
+
+      <h3>Single Logout (SLO)</h3>
+
+      <p>Quando o usuário faz logout de <strong>uma</strong> aplicação, todas as outras devem ser notificadas. Existem dois mecanismos:</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>🔙 Backchannel Logout</h4>
+          <div class="comp-field"><strong>Como:</strong> Keycloak envia POST para cada client</div>
+          <div class="comp-field"><strong>Configuração:</strong> "Backchannel Logout URL" no client</div>
+          <div class="comp-field"><strong>Vantagem:</strong> Funciona mesmo se o browser fechou</div>
+          <div class="comp-field"><strong>Requisito:</strong> App precisa ter endpoint para receber</div>
+        </div>
+        <div class="comparison-side">
+          <h4>🖥️ Front-Channel Logout</h4>
+          <div class="comp-field"><strong>Como:</strong> Browser carrega iframes de logout de cada client</div>
+          <div class="comp-field"><strong>Configuração:</strong> "Front-Channel Logout" habilitado</div>
+          <div class="comp-field"><strong>Vantagem:</strong> Simples, não precisa endpoint server-side</div>
+          <div class="comp-field"><strong>Limitação:</strong> Depende do browser estar aberto</div>
+        </div>
+      </div>
+
+      <h3>Cenário real</h3>
+
+      <div class="scenario-card">
+        <div class="sc-header">
+          <span class="sc-icon">🐛</span>
+          <span class="sc-title">"Usuário fez logout do App A mas continua logado no App B"</span>
+        </div>
+        <p>O usuário clicou "Sair" no App A. O App A redirecionou para o endpoint de logout do Keycloak. A SSO Session foi invalidada. Mas o App B não foi notificado — continuou usando o access token em cache até expirar.</p>
+        <p><strong>Causa:</strong> Backchannel Logout URL não estava configurada no client do App B.</p>
+        <p><strong>Solução:</strong> Configurar a Backchannel Logout URL em todos os clients que precisam de SLO. O App B precisa de um endpoint (ex: <code>/logout/callback</code>) que invalida a sessão local ao receber a notificação.</p>
+      </div>
+
+      <h3>Gerenciamento no Admin Console</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <strong>Ver sessões de um usuário</strong>
+            <p>Users → selecione usuário → aba "Sessions" — mostra todos os clients com sessão ativa</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <strong>Ver todas as sessões ativas</strong>
+            <p>Menu "Sessions" — visão geral de sessões ativas por client</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <strong>Revogar sessão específica</strong>
+            <p>Na aba Sessions do usuário → "Sign out" para encerrar a sessão</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Offline Sessions</h3>
+      <p>Quando um client solicita o scope <code>offline_access</code>, uma Offline Session é criada. Ela sobrevive restarts do servidor e tem timeouts próprios:</p>
+      <ul class="feature-list">
+        <li><strong>Offline Session Idle:</strong> padrão 30 dias</li>
+        <li><strong>Offline Session Max:</strong> padrão 60 dias</li>
+      </ul>
+      <p>Comum em apps mobile que precisam manter o usuário logado por semanas sem pedir login novamente. O token emitido é um offline token (refresh token de longa duração).</p>
+
+      <div class="key-takeaway">
+        <h4>💡 Key Takeaway</h4>
+        <p><strong>Entenda a hierarquia:</strong> SSO Session → Client Sessions → Tokens. A SSO Session é o "guarda-chuva" — quando ela morre, tudo abaixo morre. Configure Backchannel Logout em todos os clients para garantir Single Logout real. E lembre: access tokens curtos (5 min) + refresh tokens são mais seguros que access tokens longos.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="03-cors.html">← CORS</a>
+        <a href="05-auditoria.html">Próximo: Auditoria →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .hierarchy-diagram { margin: 24px 0; }
+    .h-level { margin-bottom: 8px; }
+    .h-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; }
+    .h-sso { border-color: var(--accent); border-width: 2px; }
+    .h-box strong { display: block; margin-bottom: 4px; font-family: var(--font-display); font-size: 0.9rem; }
+    .h-box p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+    .h-children { padding-left: 28px; margin-top: 8px; border-left: 2px dashed var(--border); }
+    .h-level-2 { margin-bottom: 6px; }
+    .h-client { border-color: rgba(255, 165, 0, 0.4); }
+
+    .timeout-visual { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .tv-bar { position: relative; border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; }
+    .tv-sso-max { background: rgba(41, 151, 255, 0.08); border: 1px solid rgba(41, 151, 255, 0.3); }
+    .tv-sso-idle { background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.3); width: 50%; margin-top: 8px; }
+    .tv-refresh { background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.3); width: 100%; }
+    .tv-access { background: rgba(231, 76, 60, 0.08); border: 1px solid rgba(231, 76, 60, 0.3); width: 15%; }
+    .tv-label { font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); }
+    .tv-legend { font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: 12px; }
+
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .three-col { grid-template-columns: 1fr 1fr 1fr; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; font-size: 0.9rem; }
+    .comp-field { font-size: 0.82rem; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+
+    .scenario-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+    .sc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .sc-icon { font-size: 1.2rem; }
+    .sc-title { font-weight: 600; font-size: 0.95rem; }
+    .scenario-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0; }
+
+    .steps-list { margin: 20px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+    .step-content strong { display: block; margin-bottom: 4px; }
+    .step-content p { font-size: 0.83rem; color: var(--text-secondary); margin: 4px 0 0; }
+
+    h3 { font-family: var(--font-display); }
+
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .three-col { grid-template-columns: 1fr; }
+      .h-children { padding-left: 16px; }
+      .tv-sso-idle { width: 80%; }
+      .tv-refresh { width: 100%; }
+      .tv-access { width: 30%; }
+    }
+  </style>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rotação de Chaves | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">06 — Segurança e Políticas</a> → <span>Rotação de Chaves</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Rotação de Chaves</h2>
+
+      <p>O Keycloak usa pares de chaves assimétricas (RSA por padrão, também suporta ECDSA e EdDSA) para assinar tokens. O access_token e id_token são JWTs assinados. Já o refresh_token, no Keycloak 20+, é um identificador opaco (não é JWT) armazenado no servidor — portanto, não é afetado diretamente pela rotação de chaves.</p>
+      <p>Na aba Keys, você verá múltiplos tipos de chave: RSA (assinatura), HMAC/AES (criptografia), e possivelmente ECDSA. Vamos focar nas chaves de assinatura RSA, que são as mais comuns.</p>
+
+      <h3>O que são as Realm Keys</h3>
+
+      <div class="concept-box">
+        <div class="concept-item">
+          <span class="ci-icon">🔑</span>
+          <div class="ci-content">
+            <strong>Par de chaves RSA</strong>
+            <p>Chave privada (assina tokens) + chave pública (verifica assinaturas). A privada nunca sai do Keycloak.</p>
+          </div>
+        </div>
+        <div class="concept-item">
+          <span class="ci-icon">🏷️</span>
+          <div class="ci-content">
+            <strong>kid (Key ID)</strong>
+            <p>Cada chave tem um identificador único. O header do JWT contém o <code>kid</code> que indica qual chave assinou aquele token.</p>
+          </div>
+        </div>
+        <div class="concept-item">
+          <span class="ci-icon">📍</span>
+          <div class="ci-content">
+            <strong>Onde ver</strong>
+            <p>Realm Settings → Keys → aba "Active" mostra as chaves em uso.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>O header do JWT referencia a chave</h3>
+
+      <div class="code-block"><code>{
+  "alg": "RS256",
+  "typ": "JWT",
+  "kid": "abc123-def456-ghi789"  ← identifica qual chave assinou
+}</code></div>
+
+      <p>Quando uma aplicação recebe um token, ela usa o <code>kid</code> para buscar a chave pública correta no endpoint JWKS e verificar a assinatura.</p>
+      <p>Bibliotecas OIDC bem implementadas (Spring Security, keycloak-js) atualizam o JWKS automaticamente quando encontram um <code>kid</code> desconhecido. Verifique se sua biblioteca tem 'JWKS rotation support'. Se não tiver, reiniciar a aplicação limpa o cache.</p>
+
+      <h3>O endpoint JWKS</h3>
+
+      <div class="code-block"><code>GET /realms/{realm}/protocol/openid-connect/certs
+
+Retorna todas as chaves públicas ativas do realm em formato JWK Set.
+As aplicações devem consultar este endpoint periodicamente — não cachear para sempre.</code></div>
+
+      <h3>Por que rotacionar</h3>
+
+      <ul class="feature-list">
+        <li><strong>Boa prática de segurança:</strong> limitar o tempo de vida de uma chave reduz o impacto de comprometimento</li>
+        <li><strong>Chave comprometida:</strong> se a chave privada vazou, rotacionar imediatamente</li>
+        <li><strong>Compliance:</strong> regulamentações podem exigir rotação periódica (ex: PCI-DSS)</li>
+        <li><strong>Migração:</strong> mudança de algoritmo (ex: RS256 → RS512)</li>
+      </ul>
+
+      <h3>O que acontece quando você rotaciona</h3>
+
+      <div class="impact-cards">
+        <div class="impact-card impact-warning">
+          <span class="ic-icon">⚡</span>
+          <div class="ic-content">
+            <strong>Novos tokens</strong> são assinados com a nova chave
+          </div>
+        </div>
+        <div class="impact-card impact-danger">
+          <span class="ic-icon">💥</span>
+          <div class="ic-content">
+            <strong>Tokens antigos</strong> ficam INVÁLIDOS se a chave antiga for removida
+          </div>
+        </div>
+        <div class="impact-card impact-warning">
+          <span class="ic-icon">🔄</span>
+          <div class="ic-content">
+            <strong>Aplicações com cache</strong> da chave pública antiga não conseguem verificar novos tokens até atualizar o JWKS
+          </div>
+        </div>
+      </div>
+
+      <h3>Active vs Passive keys</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>🟢 Active</h4>
+          <div class="comp-field"><strong>Função:</strong> Assina novos tokens</div>
+          <div class="comp-field"><strong>No JWKS:</strong> Sim, aparece</div>
+          <div class="comp-field"><strong>Quantidade:</strong> Uma por algoritmo</div>
+          <div class="comp-field"><strong>Uso:</strong> Chave principal em uso</div>
+        </div>
+        <div class="comparison-side">
+          <h4>🟡 Passive</h4>
+          <div class="comp-field"><strong>Função:</strong> NÃO assina novos tokens</div>
+          <div class="comp-field"><strong>No JWKS:</strong> Sim, ainda aparece</div>
+          <div class="comp-field"><strong>Quantidade:</strong> Pode ter várias</div>
+          <div class="comp-field"><strong>Uso:</strong> Permite verificar tokens antigos durante transição</div>
+        </div>
+      </div>
+
+      <h3>Rotação segura — passo a passo</h3>
+
+      <div class="interactive-box">
+        <div class="timeline">
+          <div class="timeline-step" id="ts-1">
+            <div class="ts-marker active">1</div>
+            <div class="ts-content">
+              <strong>Adicionar nova chave</strong>
+              <p>Gere uma nova chave e marque como Active. A chave antiga automaticamente vira Passive.</p>
+              <div class="ts-state">
+                <span class="key-badge key-active">Nova (Active) — assina tokens</span>
+                <span class="key-badge key-passive">Antiga (Passive) — ainda valida tokens antigos</span>
+              </div>
+            </div>
+          </div>
+          <div class="timeline-step" id="ts-2">
+            <div class="ts-marker">2</div>
+            <div class="ts-content">
+              <strong>Esperar tokens antigos expirarem</strong>
+              <p>Aguarde pelo menos o Access Token Lifespan (geralmente 5 min). No Keycloak 20+ com refresh tokens opacos, apenas os access_tokens em circulação são afetados. Se usar offline tokens (JWT), aguarde o Offline Session Max.</p>
+              <div class="ts-state">
+                <span class="key-badge key-active">Nova — assinando novos tokens</span>
+                <span class="key-badge key-passive">Antiga — validando tokens em circulação</span>
+              </div>
+            </div>
+          </div>
+          <div class="timeline-step" id="ts-3">
+            <div class="ts-marker">3</div>
+            <div class="ts-content">
+              <strong>Remover chave antiga</strong>
+              <p>Quando não há mais tokens assinados com a chave antiga em circulação, remova-a com segurança.</p>
+              <div class="ts-state">
+                <span class="key-badge key-active">Nova — única chave ativa</span>
+                <span class="key-badge key-removed">Antiga — removida ✓</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="timeline-controls">
+          <button class="btn btn-secondary" onclick="showTimelineStep(1)">Passo 1</button>
+          <button class="btn btn-secondary" onclick="showTimelineStep(2)">Passo 2</button>
+          <button class="btn btn-secondary" onclick="showTimelineStep(3)">Passo 3</button>
+        </div>
+      </div>
+
+      <p><strong>Como fazer no Admin Console:</strong> Realm Settings → Keys → aba Providers → adicione um novo provider 'rsa-generated' com prioridade maior que o existente. A chave com maior prioridade se torna Active automaticamente. A chave antiga fica como Passive (ainda valida tokens antigos).</p>
+
+      <h3>Cenário real: o incidente clássico</h3>
+
+      <div class="scenario-card">
+        <div class="sc-header">
+          <span class="sc-icon">🔥</span>
+          <span class="sc-title">"Pods reiniciaram, chaves regeneraram, todos os usuários receberam 401"</span>
+        </div>
+        <p>O Keycloak estava rodando sem persistência de banco para as chaves (ou com configuração efêmera). Quando os pods reiniciaram, novas chaves foram geradas. Todos os tokens em circulação — assinados com as chaves antigas que não existem mais — passaram a retornar <code>401 Unauthorized</code>.</p>
+        <p><strong>Impacto:</strong> Todos os usuários de todas as aplicações foram deslogados simultaneamente.</p>
+        <p><strong>Lição:</strong> As chaves do realm devem ser persistidas em banco de dados. Nunca use armazenamento efêmero para o Keycloak em produção.</p>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Key Takeaway</h4>
+        <p><strong>Rotação de chaves invalida tokens existentes.</strong> Planeje a rotação: mantenha a chave antiga como Passive durante a transição, espere os tokens expirarem, e só então remova. Aplicações devem buscar o JWKS periodicamente (não cachear para sempre). E nunca rode Keycloak sem persistência de chaves em produção.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="01-brute-force.html">← Brute Force</a>
+        <a href="03-cors.html">Próximo: CORS →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    function showTimelineStep(step) {
+      document.querySelectorAll('.timeline-step').forEach((el, i) => {
+        el.style.opacity = i < step ? '1' : '0.4';
+      });
+      document.querySelectorAll('.ts-marker').forEach((el, i) => {
+        el.classList.toggle('active', i < step);
+      });
+    }
+  </script>
+  <style>
+    .concept-box { margin: 20px 0; }
+    .concept-item { display: flex; gap: 16px; align-items: flex-start; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; }
+    .ci-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .ci-content strong { display: block; margin-bottom: 4px; }
+    .ci-content p { font-size: 0.83rem; color: var(--text-secondary); margin: 0; }
+
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+
+    .feature-list { list-style: none; padding: 0; margin: 16px 0; }
+    .feature-list li { padding: 8px 0 8px 24px; position: relative; font-size: 0.88rem; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+    .feature-list li:last-child { border-bottom: none; }
+    .feature-list li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+
+    .impact-cards { display: grid; gap: 8px; margin: 20px 0; }
+    .impact-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: var(--radius); }
+    .impact-warning { background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.2); }
+    .impact-danger { background: rgba(231, 76, 60, 0.08); border: 1px solid rgba(231, 76, 60, 0.2); }
+    .ic-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .ic-content { font-size: 0.85rem; color: var(--text-secondary); }
+
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+
+    .timeline { position: relative; padding-left: 20px; margin: 20px 0; }
+    .timeline::before { content: ''; position: absolute; left: 14px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+    .timeline-step { position: relative; margin-bottom: 24px; padding-left: 24px; transition: opacity 0.3s; }
+    .ts-marker { position: absolute; left: -6px; top: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--bg-secondary); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; z-index: 1; }
+    .ts-marker.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .ts-content strong { display: block; margin-bottom: 4px; font-family: var(--font-display); }
+    .ts-content p { font-size: 0.83rem; color: var(--text-secondary); margin: 4px 0 8px; }
+    .ts-state { display: flex; flex-wrap: wrap; gap: 6px; }
+    .key-badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; font-weight: 500; }
+    .key-active { background: rgba(46, 204, 113, 0.12); color: #27ae60; }
+    .key-passive { background: rgba(255, 165, 0, 0.12); color: #e89800; }
+    .key-removed { background: rgba(231, 76, 60, 0.1); color: #e74c3c; text-decoration: line-through; }
+    .timeline-controls { display: flex; gap: 8px; margin-top: 12px; }
+
+    .scenario-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+    .sc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .sc-icon { font-size: 1.2rem; }
+    .sc-title { font-weight: 600; font-size: 0.95rem; }
+    .scenario-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0; }
+
+    h3 { font-family: var(--font-display); }
+
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .ts-state { flex-direction: column; }
+      .timeline-controls { flex-wrap: wrap; }
+      .concept-item { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</body>
+</html>

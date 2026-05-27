@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js / Express | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">07 — Integração</a> → <span>Node.js / Express</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Node.js / Express</h2>
+
+      <p>No ecossistema Node.js, você não precisa de frameworks pesados para integrar com Keycloak. Duas bibliotecas resolvem tudo: <code>jose</code> para validar tokens e <code>openid-client</code> para login flows.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🟢</span>
+        <h3>Duas abordagens</h3>
+        <p><strong>Proteger API</strong> (Resource Server): valide JWT nas requisições. <strong>Login de usuários</strong> (Client): redirecione ao Keycloak e gerencie sessão.</p>
+      </div>
+
+      <h3>Protegendo uma API (Resource Server)</h3>
+
+      <p>Use a biblioteca <code>jose</code> — leve, sem dependências, mantida pela comunidade OIDC:</p>
+
+      <pre class="code-block">import { jwtVerify, createRemoteJWKSet } from 'jose';
+
+const JWKS = createRemoteJWKSet(
+  new URL('https://keycloak/realms/meu-realm/protocol/openid-connect/certs')
+);
+
+async function authMiddleware(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'No token' });
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer: 'https://keycloak/realms/meu-realm',
+      audience: 'minha-api'
+    });
+    req.user = payload;
+    next();
+  } catch (e) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+}</pre>
+
+      <p>O <code>createRemoteJWKSet</code> busca e cacheia as chaves públicas automaticamente. Quando o Keycloak rotaciona chaves, a biblioteca busca as novas.</p>
+
+      <h3>Autorização por Role</h3>
+
+      <pre class="code-block">function requireRole(role) {
+  return (req, res, next) =&gt; {
+    const roles = req.user.realm_access?.roles || [];
+    if (!roles.includes(role)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+  };
+}
+
+// Uso:
+app.get('/admin/users', authMiddleware, requireRole('admin'), (req, res) =&gt; {
+  res.json({ users: ['...'] });
+});
+
+app.get('/profile', authMiddleware, (req, res) =&gt; {
+  res.json({ sub: req.user.sub, email: req.user.email });
+});</pre>
+
+      <h3>Login de Usuários (OAuth2 Client)</h3>
+
+      <p>Para aplicações que precisam fazer login (não apenas validar tokens), use <code>openid-client</code> (v6+):</p>
+
+      <pre class="code-block">import * as client from 'openid-client';
+import session from 'express-session';
+
+// Discovery automático — retorna um Configuration
+const config = await client.discovery(
+  new URL('https://keycloak/realms/meu-realm'),
+  'minha-app',
+  'meu-secret'
+);
+
+const REDIRECT_URI = 'http://localhost:3000/callback';
+
+// Rota de login
+app.get('/login', async (req, res) =&gt; {
+  const codeVerifier = client.randomPKCECodeVerifier();
+  const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
+  req.session.codeVerifier = codeVerifier;
+
+  const authUrl = client.buildAuthorizationUrl(config, {
+    redirect_uri: REDIRECT_URI,
+    scope: 'openid profile email',
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
+  });
+  res.redirect(authUrl.href);
+});
+
+// Callback
+app.get('/callback', async (req, res) =&gt; {
+  const currentUrl = new URL(req.url, 'http://localhost:3000');
+  const tokenResponse = await client.authorizationCodeGrant(config, currentUrl, {
+    pkceCodeVerifier: req.session.codeVerifier,
+  });
+  req.session.tokens = tokenResponse;
+  res.redirect('/');
+});</pre>
+
+      <h3>Bibliotecas Recomendadas</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Biblioteca</th>
+              <th>Uso</th>
+              <th>Quando usar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>jose</code></td>
+              <td>Validação de JWT</td>
+              <td>APIs que só precisam validar tokens</td>
+            </tr>
+            <tr>
+              <td><code>openid-client</code> (v6+)</td>
+              <td>Client OIDC completo</td>
+              <td>Apps que fazem login de usuários</td>
+            </tr>
+            <tr>
+              <td><code>passport-openidconnect</code></td>
+              <td>Strategy para Passport.js</td>
+              <td>Se já usa Passport no projeto</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Para APIs, <code>jose</code> é tudo que você precisa — leve e sem dependências. Para login flows completos, use <code>openid-client</code> v6+ (API funcional, sem classes). Esqueça o <code>keycloak-nodejs-connect</code> (deprecated).</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="02-spring-boot.html">← Spring Boot</a>
+        <a href="04-spa-react.html">SPA (React) →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

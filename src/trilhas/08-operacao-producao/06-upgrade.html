@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upgrade de Versão | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">08 — Operação em Produção</a> → <span>Upgrade de Versão</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Upgrade de Versão</h2>
+
+      <p>Keycloak recebe releases trimestrais com patches de segurança, bug fixes e features novas. Ficar em versão antiga é acumular vulnerabilidades. Mas upgrade sem processo é pedir para quebrar produção.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">⬆️</span>
+        <h3>Regra de ouro</h3>
+        <p>Backup → Teste em staging → Upgrade em produção. Nessa ordem. Sempre.</p>
+      </div>
+
+      <h3>Regras de Upgrade</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Regra</th><th>Detalhe</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Schema migra automaticamente</td><td>O Keycloak atualiza o banco no startup — sem scripts manuais</td></tr>
+            <tr><td>Upgrade sequencial recomendado</td><td>Faça N → N+1 → N+2. Pular versões não é oficialmente suportado e pode causar falhas na migração do schema</td></tr>
+            <tr><td>NÃO pode fazer downgrade</td><td>Schema é forward-only. Rollback = restaurar backup do banco</td></tr>
+            <tr><td>Sempre leia o Upgrading Guide</td><td>Breaking changes são documentadas por versão</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="warning-box">
+        <span class="wb-icon">⚠️</span>
+        <p><strong>Downgrade impossível:</strong> uma vez que o Keycloak migra o schema do banco para a versão nova, não há como voltar. O único rollback é restaurar o backup do banco feito ANTES do upgrade.</p>
+      </div>
+
+      <h3>Procedimento de Upgrade</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Ler release notes + upgrading guide</strong>
+            <p>Identifique breaking changes, features removidas, mudanças de comportamento.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Backup do banco de dados</strong>
+            <p>ANTES de qualquer coisa. Este é seu rollback plan.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Testar em staging</strong>
+            <p>Mesmo schema de banco, mesma config. Valide login flows, admin console, integrações.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <strong>Atualizar imagem / binário</strong>
+            <p>Trocar a tag da imagem Docker ou substituir os binários.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <strong>Executar <code>kc.sh build</code></strong>
+            <p>Se houve mudança de configuração de build (providers, features, DB type).</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <strong>Iniciar nova versão</strong>
+            <p>O Keycloak detecta a versão do schema e migra automaticamente.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">7</div>
+          <div class="step-content">
+            <strong>Verificar</strong>
+            <p>Health endpoint, admin console, login de teste, logs sem erros.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">8</div>
+          <div class="step-content">
+            <strong>Monitorar</strong>
+            <p>Fique de olho nos logs e métricas por 24-48h após o upgrade.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Rolling Upgrade em Cluster</h3>
+
+      <div class="scenario-card">
+        <div class="sc-header">
+          <span class="sc-icon">🔄</span>
+          <span class="sc-title">Kubernetes Rolling Update</span>
+        </div>
+        <p>• Rolling updates funcionam para <strong>patch/minor</strong> upgrades (ex: 24.0.1 → 24.0.5)</p>
+        <p>• Para <strong>major</strong> upgrades (ex: 23 → 24), prefira parar todas as instâncias antigas antes de subir as novas (recreate strategy)</p>
+        <p>• O primeiro pod novo que sobe executa a migração do schema</p>
+        <p>• Em major upgrades, pods antigos podem não funcionar com o schema novo — risco de erros</p>
+        <p>• Monitore durante o rollout — se houver erros, restaure o backup do banco e faça rollback da imagem</p>
+      </div>
+
+      <h3>Problemas Comuns de Upgrade</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Problema</th><th>Causa</th><th>Solução</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Feature não funciona mais</td><td>Feature deprecated foi removida</td><td>Ler upgrading guide, usar alternativa</td></tr>
+            <tr><td>Custom SPI quebrou</td><td>API interna mudou</td><td>Recompilar contra a nova versão</td></tr>
+            <tr><td>Theme com erro</td><td>Templates FreeMarker mudaram</td><td>Atualizar theme para nova estrutura</td></tr>
+            <tr><td>Client adapter não funciona</td><td>Adapters foram deprecated</td><td>Migrar para bibliotecas OIDC padrão</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Migração WildFly → Quarkus</h3>
+
+      <p>Se você ainda está no Keycloak legacy (WildFly), a migração para Quarkus é uma mudança significativa:</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>🦬 WildFly (Legacy)</h4>
+          <div class="comp-field">Config: <code>standalone.xml</code></div>
+          <div class="comp-field">CLI: <code>jboss-cli.sh</code></div>
+          <div class="comp-field">Deploy: WAR em application server</div>
+          <div class="comp-field">Startup: 30-60 segundos</div>
+          <div class="comp-field">⚠️ End of life</div>
+        </div>
+        <div class="comparison-side">
+          <h4>🚀 Quarkus (Atual)</h4>
+          <div class="comp-field">Config: <code>keycloak.conf</code> / env vars</div>
+          <div class="comp-field">CLI: <code>kc.sh</code></div>
+          <div class="comp-field">Deploy: binário standalone / container</div>
+          <div class="comp-field">Startup: 5-15 segundos</div>
+          <div class="comp-field">✅ Ativamente mantido</div>
+        </div>
+      </div>
+
+      <div class="code-block"># Guia oficial de migração:
+# https://www.keycloak.org/migration/migrating-to-quarkus
+#
+# Passos principais:
+# 1. Mapear standalone.xml → keycloak.conf (opções equivalentes)
+# 2. Converter jboss-cli scripts → kc.sh commands
+# 3. Atualizar Dockerfile (nova imagem base)
+# 4. Testar extensivamente em staging
+# 5. O banco de dados é compatível — não precisa migrar dados</div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Upgrades são seguros SE você fizer backup antes, testar em staging e ler o upgrading guide. Nunca faça upgrade direto em produção. O banco não faz downgrade — seu único rollback é o backup.</p>
+      </div>
+      <nav class="module-nav">
+        <a href="05-backup-recovery.html">← Backup e Recovery</a>
+        <a href="index.html">Trilha 8 →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .warning-box { background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; }
+    .wb-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .warning-box p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    .steps-list { margin: 20px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+    .step-content p { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0; }
+    .scenario-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+    .sc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .sc-icon { font-size: 1.2rem; }
+    .sc-title { font-weight: 600; font-size: 0.95rem; }
+    .scenario-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

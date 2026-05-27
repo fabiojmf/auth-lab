@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arquitetura e Deploy | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">08 — Operação em Produção</a> → <span>Arquitetura e Deploy</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Arquitetura e Deploy</h2>
+
+      <p>O Keycloak moderno (20+) roda sobre <strong>Quarkus</strong> — um runtime Java otimizado para containers e cloud. Isso mudou completamente como se configura e deploya o Keycloak em produção.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🏗️</span>
+        <h3>Quarkus vs WildFly (Legacy)</h3>
+        <p>Antes do KC 17, o Keycloak rodava sobre WildFly (JBoss). A migração para Quarkus trouxe startup mais rápido, menor consumo de memória e configuração simplificada.</p>
+      </div>
+
+      <h3>Modos de Deploy</h3>
+
+      <p>O Keycloak tem dois modos fundamentais — e confundir os dois é o erro #1 de quem vai para produção:</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>🧪 Development</h4>
+          <div class="comp-field"><code>kc.sh start-dev</code></div>
+          <div class="comp-field">Banco H2 embutido (dados em memória)</div>
+          <div class="comp-field">HTTP habilitado (sem HTTPS)</div>
+          <div class="comp-field">Sem otimização de build</div>
+          <div class="comp-field">Hostname não validado</div>
+          <div class="comp-field">⚠️ Nunca use em produção</div>
+        </div>
+        <div class="comparison-side">
+          <h4>🏭 Production</h4>
+          <div class="comp-field"><code>kc.sh start</code></div>
+          <div class="comp-field">Banco externo obrigatório (PostgreSQL, MySQL...)</div>
+          <div class="comp-field">HTTPS obrigatório</div>
+          <div class="comp-field">Requer <code>kc.sh build</code> prévio</div>
+          <div class="comp-field">Hostname configurado e validado</div>
+          <div class="comp-field">✅ Otimizado para performance</div>
+        </div>
+      </div>
+
+      <h3>O passo <code>build</code></h3>
+
+      <p>O comando <code>kc.sh build</code> pré-compila a configuração (providers, banco, features) em artefatos otimizados. Isso elimina processamento no startup e reduz o tempo de inicialização drasticamente.</p>
+
+      <div class="code-block"># Build: compila configuração uma vez
+/opt/keycloak/bin/kc.sh build --db=postgres --features=token-exchange
+
+# Start: usa o build pré-compilado
+/opt/keycloak/bin/kc.sh start --hostname=sso.empresa.com --db-url=jdbc:postgresql://db:5432/keycloak</div>
+
+      <h3>Banco de Dados</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Banco</th><th>Status</th><th>Observação</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>PostgreSQL</td><td>✅ Recomendado</td><td>Melhor suporte, mais testado pela comunidade</td></tr>
+            <tr><td>MySQL / MariaDB</td><td>✅ Suportado</td><td>Funcional, amplamente usado</td></tr>
+            <tr><td>Oracle</td><td>✅ Suportado</td><td>Ambientes enterprise</td></tr>
+            <tr><td>MSSQL</td><td>✅ Suportado</td><td>SQL Server</td></tr>
+            <tr><td>H2</td><td>🚫 Apenas dev</td><td>Dados perdidos ao reiniciar. NUNCA em produção.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="warning-box">
+        <span class="wb-icon">⚠️</span>
+        <p><strong>Connection pool:</strong> Configure <code>--db-pool-initial-size</code> (default: 0) e <code>--db-pool-max-size</code> (default: 100). O schema é migrado automaticamente no startup (via Liquibase) — o Keycloak cria/atualiza tabelas sozinho. Nunca altere o schema manualmente.</p>
+      </div>
+
+      <h3>Métodos de Configuração (prioridade)</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>CLI arguments</strong>
+            <p><code>--db=postgres --db-url=jdbc:postgresql://...</code></p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Variáveis de ambiente</strong>
+            <p><code>KC_DB=postgres KC_DB_URL=jdbc:postgresql://...</code></p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Arquivo de configuração</strong>
+            <p><code>conf/keycloak.conf</code> — formato key=value</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Configurações Essenciais de Produção</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Opção</th><th>Função</th><th>Exemplo</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>--hostname</code></td><td>URL pública do Keycloak</td><td><code>sso.empresa.com</code></td></tr>
+            <tr><td><code>--hostname-strict=true</code></td><td>Rejeita requests com hostname errado (KC 20-24; no KC 25+ é implícito ao definir --hostname)</td><td>—</td></tr>
+            <tr><td><code>--http-enabled=false</code></td><td>Força HTTPS (desabilita HTTP)</td><td>—</td></tr>
+            <tr><td><code>--proxy-headers</code></td><td>Confia nos headers do proxy</td><td><code>xforwarded</code></td></tr>
+            <tr><td><code>--db</code></td><td>Tipo do banco</td><td><code>postgres</code></td></tr>
+            <tr><td><code>--db-url</code></td><td>JDBC connection string</td><td><code>jdbc:postgresql://db:5432/kc</code></td></tr>
+            <tr><td><code>--db-username</code></td><td>Usuário do banco</td><td><code>keycloak</code></td></tr>
+            <tr><td><code>--db-password</code></td><td>Senha do banco</td><td>(use secrets)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Deploy com Container</h3>
+
+      <p>A imagem oficial é <code>quay.io/keycloak/keycloak</code>. O padrão é um Dockerfile multi-stage:</p>
+
+      <div class="code-block">FROM quay.io/keycloak/keycloak:latest as builder
+
+ENV KC_DB=postgres
+ENV KC_FEATURES=token-exchange
+RUN /opt/keycloak/bin/kc.sh build
+
+FROM quay.io/keycloak/keycloak:latest
+COPY --from=builder /opt/keycloak/ /opt/keycloak/
+
+# --optimized pula o build step no startup (requer build prévio no stage anterior)
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
+CMD ["start", "--optimized"]</div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Keycloak em produção requer configuração explícita — nada funciona por padrão. Banco externo, HTTPS, hostname e proxy-headers são o mínimo absoluto. Sem isso, você tem um ambiente de desenvolvimento exposto na internet.</p>
+      </div>
+      <nav class="module-nav">
+        <a href="index.html">← Trilha 8</a>
+        <a href="02-alta-disponibilidade.html">Alta Disponibilidade →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .warning-box { background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; }
+    .wb-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .warning-box p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    .steps-list { margin: 20px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+    .step-content p { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

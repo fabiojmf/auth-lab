@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confidential vs Public | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">04 — Clients na Prática</a> → <span>Confidential vs Public</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Confidential vs Public</h2>
+
+      <p>Antes de configurar qualquer client no Keycloak, existe <strong>uma pergunta fundamental</strong> que define tudo:</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🔑</span>
+        <h3>A aplicação consegue guardar um segredo?</h3>
+        <p>Se sim → <strong>Confidential</strong>. Se não → <strong>Public</strong>.</p>
+      </div>
+
+      <p>Um "segredo" aqui é o <code>client_secret</code> — uma credencial que o client usa para se autenticar no Keycloak ao trocar o authorization code por tokens.</p>
+
+      <h3>Comparação visual</h3>
+
+      <div class="comparison">
+        <div class="comparison-side confidential-side">
+          <h4>🔒 Confidential</h4>
+          <div class="comp-field"><strong>Client authentication:</strong> On</div>
+          <div class="comp-field"><strong>Tem client_secret:</strong> Sim</div>
+          <div class="comp-field"><strong>Onde roda:</strong> Servidor (backend)</div>
+          <div class="comp-field"><strong>Código acessível ao usuário:</strong> Não</div>
+          <div class="comp-field"><strong>Troca de token:</strong> code + secret</div>
+          <div class="comp-examples">
+            <strong>Exemplos:</strong>
+            <ul>
+              <li>Spring Boot / Node.js / Django</li>
+              <li>Microserviços (service account)</li>
+              <li>BFF (Backend for Frontend)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="comparison-side public-side">
+          <h4>🌐 Public</h4>
+          <div class="comp-field"><strong>Client authentication:</strong> Off</div>
+          <div class="comp-field"><strong>Tem client_secret:</strong> Não</div>
+          <div class="comp-field"><strong>Onde roda:</strong> Browser ou dispositivo do usuário</div>
+          <div class="comp-field"><strong>Código acessível ao usuário:</strong> Sim</div>
+          <div class="comp-field"><strong>Troca de token:</strong> code + PKCE</div>
+          <div class="comp-examples">
+            <strong>Exemplos:</strong>
+            <ul>
+              <li>SPA (React, Angular, Vue)</li>
+              <li>App mobile (iOS, Android)</li>
+              <li>App desktop (Electron)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <h3>Cenários reais</h3>
+
+      <div class="scenarios">
+        <div class="scenario-card">
+          <div class="sc-header">
+            <span class="sc-icon">☕</span>
+            <span class="sc-title">Backend web (Spring Boot)</span>
+          </div>
+          <div class="sc-type confidential-badge">Confidential</div>
+          <p>O código roda no servidor. O <code>client_secret</code> fica em variável de ambiente ou vault. Ninguém de fora tem acesso.</p>
+        </div>
+
+        <div class="scenario-card">
+          <div class="sc-header">
+            <span class="sc-icon">⚛️</span>
+            <span class="sc-title">SPA (React)</span>
+          </div>
+          <div class="sc-type public-badge">Public</div>
+          <p>Todo o código roda no browser do usuário. Qualquer secret no código pode ser extraído com F12. Usa PKCE para proteger a troca.</p>
+        </div>
+
+        <div class="scenario-card">
+          <div class="sc-header">
+            <span class="sc-icon">📱</span>
+            <span class="sc-title">App mobile (iOS/Android)</span>
+          </div>
+          <div class="sc-type public-badge">Public</div>
+          <p>O APK/IPA pode ser descompilado. Secrets embutidos no app não são seguros. Usa PKCE + Custom Tabs para login.</p>
+        </div>
+
+        <div class="scenario-card">
+          <div class="sc-header">
+            <span class="sc-icon">🤖</span>
+            <span class="sc-title">Microserviço chamando API</span>
+          </div>
+          <div class="sc-type confidential-badge">Confidential (Service Account)</div>
+          <p>Sem usuário humano. O serviço se autentica como ele mesmo usando <code>client_credentials</code>. O secret fica seguro no servidor.</p>
+        </div>
+      </div>
+
+      <h3>Como a troca de token difere</h3>
+
+      <div class="interactive-box">
+        <div class="token-exchange-tabs">
+          <button class="te-tab active" onclick="showExchange('confidential')">🔒 Confidential (com secret)</button>
+          <button class="te-tab" onclick="showExchange('public')">🌐 Public (com PKCE)</button>
+        </div>
+
+        <div class="te-content" id="te-confidential">
+          <p class="te-desc">O backend envia o <code>client_secret</code> junto com o code:</p>
+          <div class="code-block">
+<code>POST /realms/meu-realm/protocol/openid-connect/token
+
+grant_type=authorization_code
+&code=abc123
+&client_id=minha-app-backend
+&client_secret=meu-secret-super-seguro
+&redirect_uri=https://app.com/callback</code>
+          </div>
+          <p class="te-note">✅ O secret prova que é realmente a aplicação fazendo a troca, não um atacante que interceptou o code.</p>
+        </div>
+
+        <div class="te-content" id="te-public" style="display:none;">
+          <p class="te-desc">O SPA/mobile envia o <code>code_verifier</code> (PKCE) em vez do secret:</p>
+          <div class="code-block">
+<code>POST /realms/meu-realm/protocol/openid-connect/token
+
+grant_type=authorization_code
+&code=abc123
+&client_id=minha-spa
+&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+&redirect_uri=http://localhost:3000/callback</code>
+          </div>
+          <p class="te-note">✅ O Keycloak confere se o hash do code_verifier bate com o code_challenge enviado no início. Sem secret, mas ainda seguro.</p>
+        </div>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Boa prática moderna</h4>
+        <p>O OAuth 2.1 tornará PKCE obrigatório para <strong>todos</strong> os clients (inclusive confidential). Use secret + PKCE juntos quando possível — é defesa em profundidade.</p>
+      </div>
+
+      <p><strong>⚠️ Histórico:</strong> versões antigas do Keycloak tinham um terceiro tipo "bearer-only" para APIs que só validam tokens. No Keycloak 20+, isso foi removido — use um client confidential com todos os flows desabilitados.</p>
+
+      <div class="key-takeaway">
+        <h4>💡 Resumo</h4>
+        <p><strong>Confidential</strong> = aplicação com backend que pode guardar um secret de forma segura.<br>
+        <strong>Public</strong> = aplicação onde o código é acessível ao usuário (browser, mobile). Usa PKCE.<br>
+        <strong>No Keycloak:</strong> a diferença é um toggle — "Client authentication: On" = confidential, "Off" = public.<br>
+        <strong>Na dúvida:</strong> se o código roda no dispositivo do usuário, é public.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="index.html">← Trilha 4</a>
+        <a href="02-configuracao-client.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    function showExchange(type) {
+      document.getElementById('te-confidential').style.display = type === 'confidential' ? 'block' : 'none';
+      document.getElementById('te-public').style.display = type === 'public' ? 'block' : 'none';
+      document.querySelectorAll('.te-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+  </script>
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-of-type { border-bottom: none; }
+    .comp-examples { margin-top: 12px; font-size: 0.85rem; color: var(--text-secondary); }
+    .comp-examples ul { padding-left: 16px; margin-top: 4px; }
+    .comp-examples li { padding: 2px 0; }
+
+    .scenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    .scenario-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .sc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .sc-icon { font-size: 1.2rem; }
+    .sc-title { font-weight: 600; font-size: 0.9rem; }
+    .sc-type { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 3px 8px; border-radius: 4px; margin-bottom: 8px; }
+    .confidential-badge { background: rgba(41, 151, 255, 0.15); color: var(--accent); }
+    .public-badge { background: rgba(255, 165, 0, 0.15); color: #e89800; }
+    .scenario-card p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+
+    .token-exchange-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .te-tab { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 16px; font-size: 0.8rem; cursor: pointer; color: var(--text-secondary); font-family: inherit; transition: all var(--transition); }
+    .te-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(41, 151, 255, 0.05); }
+    .te-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; }
+    .te-note { font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; }
+
+    h3 { font-family: var(--font-display); }
+
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .scenarios { grid-template-columns: 1fr; }
+      .token-exchange-tabs { flex-direction: column; }
+      .code-block { font-size: 0.7rem; }
+    }
+  </style>
+</body>
+</html>

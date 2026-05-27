@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Troubleshooting de Clients | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">04 — Clients na Prática</a> → <span>Troubleshooting de Clients</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Troubleshooting de Clients</h2>
+
+      <p>Os erros mais comuns ao configurar clients no Keycloak, com explicação de <strong>por que acontecem</strong> e <strong>como resolver</strong>.</p>
+
+      <div class="error-nav">
+        <a href="#invalid_client" class="error-link">invalid_client</a>
+        <a href="#unauthorized_client" class="error-link">unauthorized_client</a>
+        <a href="#invalid_redirect_uri" class="error-link">invalid_redirect_uri</a>
+        <a href="#cors" class="error-link">CORS blocked</a>
+        <a href="#missing_claims" class="error-link">Token sem claims</a>
+        <a href="#invalid_grant" class="error-link">invalid_grant</a>
+        <a href="#user_disabled" class="error-link">user_temporarily_disabled</a>
+        <a href="#invalid_scope" class="error-link">invalid_scope</a>
+        <a href="#api_401" class="error-link">401 da API</a>
+      </div>
+
+      <!-- Error 1 -->
+      <div class="error-section" id="invalid_client">
+        <div class="error-header">
+          <span class="error-code">invalid_client</span>
+        </div>
+
+        <div class="error-looks-like">
+          <strong>Como aparece:</strong>
+          <div class="code-block"><code>HTTP 401
+{
+  "error": "invalid_client",
+  "error_description": "Invalid client or Invalid client credentials"
+}</code></div>
+        </div>
+
+        <div class="error-why">
+          <strong>Por que acontece:</strong>
+          <ul>
+            <li>O <code>client_secret</code> está errado ou expirado</li>
+            <li>O <code>client_id</code> não existe no realm</li>
+            <li>O client é <strong>public</strong> mas você está enviando um secret</li>
+            <li>O secret foi regenerado no Keycloak mas a aplicação ainda usa o antigo</li>
+          </ul>
+        </div>
+
+        <div class="error-fix">
+          <strong>✅ Como resolver:</strong>
+          <ol>
+            <li>Confira o <code>client_id</code> — é case-sensitive</li>
+            <li>Vá em Clients → seu client → Credentials → copie o secret atualizado</li>
+            <li>Se o client é public, <strong>não envie</strong> client_secret no request</li>
+            <li>Verifique se está apontando para o realm correto na URL</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Error 2 -->
+      <div class="error-section" id="unauthorized_client">
+        <div class="error-header">
+          <span class="error-code">unauthorized_client</span>
+        </div>
+
+        <div class="error-looks-like">
+          <strong>Como aparece:</strong>
+          <div class="code-block"><code>HTTP 400
+{
+  "error": "unauthorized_client",
+  "error_description": "Client not allowed to initiate browser login with given response_type"
+}</code></div>
+        </div>
+
+        <div class="error-why">
+          <strong>Por que acontece:</strong>
+          <ul>
+            <li>Você está tentando usar um fluxo que <strong>não está habilitado</strong> para este client</li>
+            <li>Exemplo: tentando Authorization Code mas "Standard Flow" está Off</li>
+            <li>Exemplo: tentando client_credentials mas "Service accounts" está Off</li>
+            <li>Exemplo: tentando password grant mas "Direct Access Grants" está Off</li>
+          </ul>
+        </div>
+
+        <div class="error-fix">
+          <strong>✅ Como resolver:</strong>
+          <ol>
+            <li>Identifique qual grant_type/response_type você está usando</li>
+            <li>Vá em Clients → seu client → Settings</li>
+            <li>Habilite o flow correspondente:
+              <ul>
+                <li><code>response_type=code</code> → Standard Flow: On</li>
+                <li><code>grant_type=client_credentials</code> → Service accounts: On</li>
+                <li><code>grant_type=password</code> → Direct Access Grants: On</li>
+              </ul>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Error 3 -->
+      <div class="error-section" id="invalid_redirect_uri">
+        <div class="error-header">
+          <span class="error-code">invalid_redirect_uri</span>
+        </div>
+
+        <div class="error-looks-like">
+          <strong>Como aparece:</strong>
+          <div class="code-block"><code>Página de erro do Keycloak:
+"Invalid parameter: redirect_uri"
+
+Ou no JSON:
+{ "error": "invalid_redirect_uri" }</code></div>
+        </div>
+
+        <div class="error-why">
+          <strong>Por que acontece:</strong>
+          <ul>
+            <li>A <code>redirect_uri</code> no request não bate com nenhuma URI cadastrada no client</li>
+            <li>Diferença de trailing slash: <code>/callback</code> vs <code>/callback/</code></li>
+            <li>Diferença de protocolo: <code>http</code> vs <code>https</code></li>
+            <li>Diferença de porta: <code>localhost:3000</code> vs <code>localhost:8080</code></li>
+            <li>Wildcard usado incorretamente</li>
+          </ul>
+        </div>
+
+        <div class="error-fix">
+          <strong>✅ Como resolver:</strong>
+          <ol>
+            <li>Compare EXATAMENTE a URI do request com as cadastradas no Keycloak</li>
+            <li>Regras de wildcard:
+              <ul>
+                <li>✅ <code>https://app.com/*</code> — wildcard no final do path</li>
+                <li>❌ <code>https://*.app.com/callback</code> — wildcard no hostname NÃO funciona</li>
+                <li>❌ <code>https://app.com/*/callback</code> — wildcard no meio NÃO funciona</li>
+              </ul>
+            </li>
+            <li>Em dev, use: <code>http://localhost:3000/*</code></li>
+            <li>Em produção, seja específico: <code>https://app.com/auth/callback</code></li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Error 4 -->
+      <div class="error-section" id="cors">
+        <div class="error-header">
+          <span class="error-code">CORS blocked</span>
+        </div>
+
+        <div class="error-looks-like">
+          <strong>Como aparece:</strong>
+          <div class="code-block"><code>Console do browser:
+Access to fetch at 'https://keycloak/...token' from origin
+'http://localhost:3000' has been blocked by CORS policy:
+No 'Access-Control-Allow-Origin' header is present.</code></div>
+        </div>
+
+        <div class="error-why">
+          <strong>Por que acontece:</strong>
+          <ul>
+            <li>O campo <strong>Web Origins</strong> do client não inclui a origem da sua aplicação</li>
+            <li>O browser faz um preflight (OPTIONS) e o Keycloak rejeita porque não reconhece a origem</li>
+            <li>Só afeta chamadas do browser (SPAs). Backends não têm CORS.</li>
+          </ul>
+        </div>
+
+        <div class="error-fix">
+          <strong>✅ Como resolver:</strong>
+          <ol>
+            <li>Vá em Clients → seu client → Settings → Web Origins</li>
+            <li>Adicione <code>+</code> (sinal de mais) — isso deriva automaticamente das Valid Redirect URIs</li>
+            <li>Ou adicione explicitamente: <code>http://localhost:3000</code></li>
+            <li>⚠️ Não use <code>*</code> em produção — permite qualquer origem</li>
+            <li>Lembre: Web Origins é só scheme + host + port (sem path)</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Error 5 -->
+      <div class="error-section" id="missing_claims">
+        <div class="error-header">
+          <span class="error-code">Token sem roles/claims esperadas</span>
+        </div>
+
+        <div class="error-looks-like">
+          <strong>Como aparece:</strong>
+          <div class="code-block"><code>// Você decodifica o token e...
+{
+  "sub": "...",
+  "preferred_username": "maria"
+  // cadê o email? cadê as roles?
+}</code></div>
+        </div>
+
+        <div class="error-why">
+          <strong>Por que acontece:</strong>
+          <ul>
+            <li><strong>Full Scope Allowed: Off</strong> e as roles não foram atribuídas ao scope do client</li>
+            <li>O scope (ex: <code>email</code>) não está nos Default Scopes do client</li>
+            <li>O mapper existe mas "Add to access token" está desmarcado (só vai no id_token)</li>
+            <li>O usuário não tem o atributo preenchido</li>
+            <li>É um token de service account (não tem dados pessoais por padrão)</li>
+          </ul>
+        </div>
+
+        <div class="error-fix">
+          <strong>✅ Como resolver:</strong>
+          <ol>
+            <li>Verifique Client → Client Scopes → Default/Optional scopes atribuídos</li>
+            <li>Dentro do scope, verifique se o mapper tem "Add to access token: On"</li>
+            <li>Se Full Scope Allowed está Off, vá em Client Scopes → Scope → atribua as roles</li>
+            <li>Use o "Evaluate" do Keycloak: Client Scopes → Evaluate → veja o token gerado</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Error 6 -->
+      <div class="error-section" id="invalid_grant">
+        <div class="error-header">
+          <span class="error-code">invalid_grant</span>
+        </div>
+
+        <div class="error-looks-like">
+          <strong>Como aparece:</strong>
+          <div class="code-block"><code>HTTP 400
+{
+  "error": "invalid_grant",
+  "error_description": "Code not valid"
+}</code></div>
+        </div>
+
+        <div class="error-why">
+          <strong>Por que acontece:</strong>
+          <ul>
+            <li>O authorization <strong>code expirou</strong> (padrão: 60 segundos)</li>
+            <li>O code já foi <strong>usado</strong> (é de uso único)</li>
+            <li>A <code>redirect_uri</code> na troca é <strong>diferente</strong> da usada no pedido de autorização</li>
+            <li>O <code>code_verifier</code> (PKCE) não bate com o <code>code_challenge</code> original</li>
+            <li>O refresh token expirou ou foi revogado</li>
+          </ul>
+        </div>
+
+        <div class="error-fix">
+          <strong>✅ Como resolver:</strong>
+          <ol>
+            <li>Garanta que a troca acontece imediatamente após receber o code</li>
+            <li>Nunca reutilize um code — se falhou, inicie o fluxo novamente</li>
+            <li>Use EXATAMENTE a mesma <code>redirect_uri</code> no /auth e no /token</li>
+            <li>Se usa PKCE, verifique que o code_verifier é o mesmo que gerou o challenge</li>
+            <li>Para refresh tokens: verifique a configuração de expiração no realm (SSO Session Idle/Max)</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Error 7 -->
+      <div class="error-section" id="user_disabled">
+        <div class="error-header">
+          <span class="error-code">user_temporarily_disabled</span>
+        </div>
+
+        <div class="error-looks-like">
+          <strong>Como aparece:</strong>
+          <div class="code-block"><code>Tela de login do Keycloak:
+"Account is temporarily disabled, contact your administrator"
+
+Ou via API:
+{ "error": "invalid_grant",
+  "error_description": "Account temporarily disabled" }</code></div>
+        </div>
+
+        <div class="error-why">
+          <strong>Por que acontece:</strong>
+          <ul>
+            <li>O <strong>Brute Force Protection</strong> do Keycloak foi ativado</li>
+            <li>Muitas tentativas de login com senha errada</li>
+            <li>O Brute Force Protection precisa ser habilitado manualmente (Realm Settings → Security Defenses → Brute Force Detection). Quando ativo, o threshold é configurável.</li>
+            <li>Pode acontecer em testes quando você erra a senha várias vezes</li>
+            <li>Também pode ser ativado por bots tentando senhas</li>
+          </ul>
+        </div>
+
+        <div class="error-fix">
+          <strong>✅ Como resolver:</strong>
+          <ol>
+            <li>No Admin Console: Users → selecione o usuário → Credentials → desbloquear</li>
+            <li>Ou espere o tempo de bloqueio passar (configurável no realm)</li>
+            <li>Para ajustar: Realm Settings → Security Defenses → Brute Force Detection</li>
+            <li>Em dev: considere desabilitar temporariamente ou aumentar o limite</li>
+            <li>Em produção: mantenha habilitado, mas ajuste os thresholds</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Error: invalid_scope -->
+      <div class="error-section" id="invalid_scope">
+        <div class="error-header">
+          <span class="error-code">invalid_scope</span>
+        </div>
+
+        <div class="error-looks-like">
+          <strong>Como aparece:</strong>
+          <div class="code-block"><code>HTTP 400
+{
+  "error": "invalid_scope",
+  "error_description": "Invalid scopes: xyz"
+}</code></div>
+        </div>
+
+        <div class="error-why">
+          <strong>Por que acontece:</strong>
+          <ul>
+            <li>O scope solicitado não existe no realm</li>
+            <li>O scope existe mas não está atribuído ao client</li>
+            <li>Typo no nome do scope (é case-sensitive)</li>
+          </ul>
+        </div>
+
+        <div class="error-fix">
+          <strong>✅ Como resolver:</strong>
+          <ol>
+            <li>Verifique se o scope existe: Realm → Client Scopes</li>
+            <li>Verifique se está atribuído ao client: Client → Client Scopes tab</li>
+            <li>Confira se não há typo no nome do scope no request</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Error: 401 from API -->
+      <div class="error-section" id="api_401">
+        <div class="error-header">
+          <span class="error-code">401 Unauthorized (da API, não do Keycloak)</span>
+        </div>
+
+        <div class="error-looks-like">
+          <strong>Como aparece:</strong>
+          <div class="code-block"><code>A API retorna 401 mesmo com um token válido do Keycloak.
+O token foi emitido com sucesso, mas a API de destino rejeita.</code></div>
+        </div>
+
+        <div class="error-why">
+          <strong>Por que acontece:</strong>
+          <ul>
+            <li>Audience errado — o campo <code>aud</code> do token não inclui o client_id da API</li>
+            <li>Token expirado (<code>exp</code> já passou)</li>
+            <li>Issuer URL errado — comum atrás de reverse proxy (a API espera um <code>iss</code> diferente)</li>
+            <li>Falha na verificação de assinatura — chave pública errada ou JWKS endpoint inacessível pela API</li>
+          </ul>
+        </div>
+
+        <div class="error-fix">
+          <strong>✅ Como resolver:</strong>
+          <ol>
+            <li>Decodifique o token (jwt.io) e verifique <code>aud</code>, <code>iss</code>, <code>exp</code></li>
+            <li>Verifique se a configuração de JWKS endpoint da API aponta para a URL correta do Keycloak</li>
+            <li>Se atrás de proxy, garanta que o <code>iss</code> no token bate com o que a API espera</li>
+            <li>Para audience: configure um mapper de Audience no client (Client Scopes → dedicated scope)</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Dica geral de debug</h4>
+        <p><strong>1.</strong> Leia a <code>error_description</code> — o Keycloak é bem descritivo.<br>
+        <strong>2.</strong> Verifique os logs do Keycloak (nível DEBUG mostra detalhes da validação).<br>
+        <strong>3.</strong> Use a aba "Sessions" e "Events" no Admin Console para ver o que aconteceu.<br>
+        <strong>4.</strong> No Keycloak 20+: Events → Login Events mostra cada tentativa com detalhes do erro.</p>
+      <p>Para habilitar logs detalhados do Keycloak:</p>
+      <pre>bin/kc.sh start-dev --log-level=org.keycloak:DEBUG</pre>
+      <p>Em Docker:</p>
+      <pre>docker logs keycloak-container --tail=100</pre>
+      <p>Procure por linhas com <code>WARN</code> ou <code>ERROR</code> no momento do erro.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="05-wizard-decisao.html">← Módulo anterior</a>
+        <a href="index.html">Concluir Trilha 4 ✓</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .error-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .error-link { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 0.75rem; font-family: var(--mono); color: var(--text-secondary); text-decoration: none; transition: all var(--transition); }
+    .error-link:hover { border-color: var(--accent); color: var(--accent); }
+
+    .error-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+    .error-header { margin-bottom: 16px; }
+    .error-code { font-family: var(--mono); font-size: 1.1rem; font-weight: 700; color: #e74c3c; }
+
+    .error-looks-like { margin-bottom: 16px; }
+    .error-looks-like strong { font-size: 0.85rem; display: block; margin-bottom: 8px; }
+    .error-why { margin-bottom: 16px; }
+    .error-why strong { font-size: 0.85rem; display: block; margin-bottom: 8px; }
+    .error-why ul { padding-left: 20px; font-size: 0.85rem; color: var(--text-secondary); }
+    .error-why li { padding: 3px 0; }
+    .error-fix strong { font-size: 0.85rem; display: block; margin-bottom: 8px; }
+    .error-fix ol { padding-left: 20px; font-size: 0.85rem; color: var(--text-secondary); }
+    .error-fix li { padding: 3px 0; }
+    .error-fix ul { padding-left: 16px; margin-top: 4px; }
+
+    .code-block { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.5; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin-top: 6px; }
+
+    h3 { font-family: var(--font-display); }
+
+    @media (max-width: 640px) {
+      .error-nav { gap: 6px; }
+      .error-link { font-size: 0.7rem; padding: 5px 8px; }
+      .error-section { padding: 16px; }
+      .code-block { font-size: 0.7rem; padding: 10px; }
+    }
+  </style>
+</body>
+</html>

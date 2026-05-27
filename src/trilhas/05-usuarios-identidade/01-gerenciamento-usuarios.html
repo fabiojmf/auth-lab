@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciamento de Usuários | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">05 — Usuários e Identidade</a> → <span>Gerenciamento de Usuários</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Gerenciamento de Usuários</h2>
+
+      <p>No Keycloak, existem duas origens fundamentais de usuários. Entender essa distinção é o primeiro passo para arquitetar qualquer solução de identidade.</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>👤 Usuários Locais</h4>
+          <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Criados diretamente no Keycloak</p>
+          <ul>
+            <li>Armazenados no banco do Keycloak</li>
+            <li>Credenciais gerenciadas pelo Keycloak</li>
+            <li>Ideal para ambientes pequenos ou dev</li>
+            <li>Simples de configurar</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>🔗 Usuários Federados</h4>
+          <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Vêm de uma fonte externa</p>
+          <ul>
+            <li>Armazenados em LDAP, AD ou outro sistema</li>
+            <li>Credenciais validadas na fonte externa</li>
+            <li>Ideal para enterprise com base existente</li>
+            <li>Requer configuração de federation</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Criando usuários no Keycloak</h3>
+
+      <p>Existem duas formas principais de criar usuários locais:</p>
+
+      <div class="interactive-box">
+        <div class="toggle-tabs">
+          <button class="tab active" onclick="showMethod('console')">🖥️ Admin Console</button>
+          <button class="tab" onclick="showMethod('api')">⚡ Admin REST API</button>
+        </div>
+
+        <div class="method active" id="method-console">
+          <ol style="padding-left: 20px; color: var(--text-secondary); font-size: 0.9rem;">
+            <li style="padding: 6px 0;">Acesse <strong style="color: var(--text-primary);">Realm → Users → Add user</strong></li>
+            <li style="padding: 6px 0;">Preencha username (obrigatório), email, firstName, lastName</li>
+            <li style="padding: 6px 0;">Marque <strong style="color: var(--text-primary);">Email Verified</strong> se já confirmou o email</li>
+            <li style="padding: 6px 0;">Salve e vá na aba <strong style="color: var(--text-primary);">Credentials</strong> para definir a senha</li>
+            <li style="padding: 6px 0;">Escolha se a senha é <em>temporária</em> (usuário troca no primeiro login) ou <em>permanente</em></li>
+          </ol>
+        </div>
+
+        <div class="method" id="method-api">
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">POST para <code>/admin/realms/{realm}/users</code></p>
+          <pre><code>{
+  "username": "maria.silva",
+  "email": "maria@empresa.com",
+  "firstName": "Maria",
+  "lastName": "Silva",
+  "enabled": true,
+  "emailVerified": true,
+  "credentials": [{
+    "type": "password",
+    "value": "senha-inicial",
+    "temporary": true
+  }]
+}</code></pre>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">Requer token de admin com role <code>manage-users</code>.</p>
+        </div>
+      </div>
+
+      <h3>Atributos do usuário</h3>
+
+      <p>No Keycloak 20+, o recurso <strong>User Profile</strong> (agora GA) permite definir quais atributos existem, quais são obrigatórios, quem pode editá-los e validações. Configure em <strong>Realm Settings → User Profile</strong>.</p>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Atributo</th>
+              <th>Tipo</th>
+              <th>Descrição</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>username</code></td>
+              <td>Padrão</td>
+              <td>Identificador único de login</td>
+            </tr>
+            <tr>
+              <td><code>email</code></td>
+              <td>Padrão</td>
+              <td>Email do usuário (pode ser usado como username)</td>
+            </tr>
+            <tr>
+              <td><code>firstName</code> / <code>lastName</code></td>
+              <td>Padrão</td>
+              <td>Nome e sobrenome</td>
+            </tr>
+            <tr>
+              <td><code>enabled</code></td>
+              <td>Padrão</td>
+              <td>Se o usuário pode logar (true/false)</td>
+            </tr>
+            <tr>
+              <td><code>cpf</code>, <code>matricula</code>, etc.</td>
+              <td>Custom</td>
+              <td>Atributos personalizados — qualquer chave/valor</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">Custom attributes ficam em <strong>User → Attributes</strong> e podem ser mapeados para claims no token via Protocol Mappers.</p>
+      </div>
+
+      <h3>Required Actions</h3>
+
+      <p>Required Actions são ações que o Keycloak força o usuário a executar no próximo login. Você pode atribuí-las individualmente ou como padrão para novos usuários.</p>
+
+      <div class="interactive-box">
+        <div class="actions-grid">
+          <div class="action-item">
+            <span class="action-icon">📧</span>
+            <div>
+              <strong>Verify Email</strong>
+              <p>Envia email de confirmação antes de permitir acesso</p>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-icon">🔑</span>
+            <div>
+              <strong>Update Password</strong>
+              <p>Força troca de senha (usado com senhas temporárias)</p>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-icon">📱</span>
+            <div>
+              <strong>Configure OTP</strong>
+              <p>Obriga configuração de segundo fator (TOTP)</p>
+            </div>
+          </div>
+          <div class="action-item">
+            <span class="action-icon">📝</span>
+            <div>
+              <strong>Update Profile</strong>
+              <p>Pede que o usuário complete dados faltantes</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Groups vs Roles</h3>
+
+      <p>Ambos organizam usuários, mas com propósitos diferentes. Confundir os dois é um erro comum.</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>📁 Groups</h4>
+          <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Estrutura organizacional</p>
+          <ul>
+            <li>Representam departamentos, equipes, unidades</li>
+            <li>Hierárquicos (grupos dentro de grupos)</li>
+            <li>Ex: /TI/Desenvolvimento, /RH/Recrutamento</li>
+            <li>Não concedem permissões diretamente</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>🛡️ Roles</h4>
+          <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Permissões e capacidades</p>
+          <ul>
+            <li>Representam o que o usuário pode fazer</li>
+            <li>Flat (composites permitem agrupar roles, mas não formam árvore)</li>
+            <li>Ex: admin, viewer, editor, approver</li>
+            <li>Concedem acesso a funcionalidades</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="interactive-box">
+        <h4 style="font-family: var(--font-display); margin-bottom: 16px;">✅ Best Practice: Roles atribuídas a Groups</h4>
+        <div class="best-practice-flow">
+          <div class="bp-step">
+            <span class="bp-icon">👤</span>
+            <span>Maria entra no grupo</span>
+            <code>/TI/Desenvolvimento</code>
+          </div>
+          <div class="bp-arrow">→</div>
+          <div class="bp-step">
+            <span class="bp-icon">📁</span>
+            <span>Grupo tem as roles</span>
+            <code>developer, deploy-staging</code>
+          </div>
+          <div class="bp-arrow">→</div>
+          <div class="bp-step">
+            <span class="bp-icon">🛡️</span>
+            <span>Maria herda as roles</span>
+            <code>automaticamente</code>
+          </div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 16px;">Quando Maria mudar de equipe, basta trocar o grupo. As roles antigas saem e as novas entram — sem editar permissões individualmente.</p>
+      </div>
+
+      <h3>Habilitando e desabilitando usuários</h3>
+
+      <p>O campo <code>enabled</code> controla se o usuário pode autenticar. Desabilitar um usuário:</p>
+      <ul class="feature-list">
+        <li><strong>Não</strong> invalida sessões ativas imediatamente (depende da expiração do token)</li>
+        <li><strong>Impede</strong> novos logins e refresh de tokens</li>
+        <li><strong>Preserva</strong> todos os dados do usuário (diferente de deletar)</li>
+      </ul>
+      <p>Use para: funcionários afastados, contas suspeitas, desligamentos (antes de deletar).</p>
+
+      <h3>Senhas temporárias vs permanentes</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Comportamento</th>
+              <th>Quando usar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Temporária</strong></td>
+              <td>Usuário é forçado a trocar no primeiro login</td>
+              <td>Criação de conta, reset de senha pelo admin</td>
+            </tr>
+            <tr>
+              <td><strong>Permanente</strong></td>
+              <td>Funciona até expirar pela política de senha</td>
+              <td>Migração de sistemas, contas de serviço</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>Usuários locais são simples e rápidos de configurar — perfeitos para desenvolvimento e ambientes pequenos. Mas em cenários enterprise, onde a empresa já tem milhares de usuários em LDAP ou Active Directory, duplicar essa base no Keycloak não faz sentido. Para isso existe a <strong>User Federation</strong> — o próximo módulo.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="index.html">← Trilha 5</a>
+        <a href="02-user-federation.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    function showMethod(which) {
+      document.querySelectorAll('.method').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(`method-${which}`).classList.add('active');
+      event.target.classList.add('active');
+    }
+  </script>
+  <style>
+    .method { display: none; }
+    .method.active { display: block; }
+
+    .toggle-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+    .tab { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 20px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); transition: all var(--transition); flex: 1; text-align: center; font-family: var(--font-display); }
+    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .tab:hover:not(.active) { border-color: var(--accent); }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .info-table tr:last-child td { border-bottom: none; }
+    .info-table code { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+
+    .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .action-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+    .action-icon { font-size: 1.4rem; }
+    .action-item strong { font-size: 0.85rem; color: var(--text-primary); display: block; margin-bottom: 4px; }
+    .action-item p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+
+    .best-practice-flow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .bp-step { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 140px; }
+    .bp-step span { font-size: 0.8rem; color: var(--text-secondary); }
+    .bp-step code { font-size: 0.75rem; color: var(--accent); }
+    .bp-icon { font-size: 1.5rem !important; color: var(--text-primary) !important; }
+    .bp-arrow { font-size: 1.3rem; color: var(--accent); font-weight: 700; }
+
+    .feature-list { padding-left: 20px; margin: 16px 0; }
+    .feature-list li { padding: 4px 0; color: var(--text-secondary); font-size: 0.9rem; }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .actions-grid { grid-template-columns: 1fr; }
+      .best-practice-flow { flex-direction: column; }
+      .bp-arrow { transform: rotate(90deg); }
+      .info-table { font-size: 0.75rem; }
+    }
+  </style>
+</body>
+</html>

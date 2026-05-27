@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Identity Providers (Brokering) | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">05 — Usuários e Identidade</a> → <span>Identity Providers (Brokering)</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Identity Providers (Brokering)</h2>
+
+      <p>Identity Brokering permite que usuários façam login no Keycloak usando <strong>outro sistema de identidade</strong>. O Keycloak não valida a senha — ele confia no resultado da autenticação feita pelo IDP externo.</p>
+
+      <h3>Federation vs Brokering — a distinção crítica</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>📂 User Federation</h4>
+          <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Keycloak CONSULTA a fonte</p>
+          <ul>
+            <li>Conecta a um <strong>user store</strong> (LDAP, DB)</li>
+            <li>Keycloak recebe username + senha</li>
+            <li>Keycloak pergunta ao LDAP: "senha correta?"</li>
+            <li>Usuário digita credenciais no Keycloak</li>
+            <li>Protocolo: LDAP, custom SPI</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>🔀 Identity Brokering</h4>
+          <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Keycloak REDIRECIONA para o IDP</p>
+          <ul>
+            <li>Conecta a um <strong>identity provider</strong> (outro SSO)</li>
+            <li>Keycloak nunca vê a senha</li>
+            <li>IDP externo autentica e devolve um token/assertion</li>
+            <li>Usuário digita credenciais no IDP externo</li>
+            <li>Protocolo: OIDC, SAML</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Casos de uso</h3>
+
+      <div class="interactive-box">
+        <div class="use-cases">
+          <div class="use-case-item">
+            <span class="uc-icon">🌐</span>
+            <div>
+              <strong>Social Login</strong>
+              <p>"Login com Google/GitHub" — provedores sociais pré-configurados</p>
+            </div>
+          </div>
+          <div class="use-case-item">
+            <span class="uc-icon">🏢</span>
+            <div>
+              <strong>SSO Corporativo</strong>
+              <p>"Login com minha empresa" — IDP corporativo (Azure AD, Okta, outro Keycloak)</p>
+            </div>
+          </div>
+          <div class="use-case-item">
+            <span class="uc-icon">⚖️</span>
+            <div>
+              <strong>Multi-organização</strong>
+              <p>"Login com outro Keycloak" — federação entre realms ou instâncias diferentes</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Como funciona — passo a passo</h3>
+
+      <div class="interactive-box">
+        <div class="flow-steps" id="brokerFlow">
+          <div class="flow-step active" data-step="1">
+            <div class="flow-icon">👤</div>
+            <p><strong>1.</strong> Usuário clica em "Login com IDP X" na tela de login do Keycloak</p>
+          </div>
+          <div class="flow-step" data-step="2">
+            <div class="flow-icon">↗️</div>
+            <p><strong>2.</strong> Keycloak redireciona o navegador para o IDP X (com parâmetros OIDC/SAML)</p>
+          </div>
+          <div class="flow-step" data-step="3">
+            <div class="flow-icon">🔐</div>
+            <p><strong>3.</strong> Usuário se autentica no IDP X (digita credenciais lá, não no Keycloak)</p>
+          </div>
+          <div class="flow-step" data-step="4">
+            <div class="flow-icon">↩️</div>
+            <p><strong>4.</strong> IDP X redireciona de volta ao Keycloak com um token/assertion assinado</p>
+          </div>
+          <div class="flow-step" data-step="5">
+            <div class="flow-icon">🔗</div>
+            <p><strong>5.</strong> Keycloak valida a resposta, cria/vincula um usuário local e executa o First Login Flow</p>
+          </div>
+          <div class="flow-step" data-step="6">
+            <div class="flow-icon">🎫</div>
+            <p><strong>6.</strong> Keycloak emite seu próprio token para a aplicação — com claims do usuário local</p>
+            <p><em>A aplicação nunca sabe que o usuário veio de outro IDP. Ela só vê o token do Keycloak.</em></p>
+          </div>
+        </div>
+        <div class="scene-controls">
+          <button class="btn btn-secondary" id="btnPrevBroker" onclick="prevBrokerStep()" disabled>← Anterior</button>
+          <span class="step-indicator" id="brokerIndicator">1 / 6</span>
+          <button class="btn" id="btnNextBroker" onclick="nextBrokerStep()">Próximo →</button>
+        </div>
+      </div>
+
+      <h3>Configuração de um Identity Provider</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Descrição</th>
+              <th>Exemplo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Alias</code></td>
+              <td>Identificador interno (aparece na URL de callback)</td>
+              <td><code>tre-pi-keycloak</code></td>
+            </tr>
+            <tr>
+              <td><code>Display Name</code></td>
+              <td>Texto que o usuário vê no botão de login</td>
+              <td><code>Login TRE-PI</code></td>
+            </tr>
+            <tr>
+              <td><code>Discovery URL</code></td>
+              <td>URL do well-known do IDP (auto-configura endpoints)</td>
+              <td><code>https://idp.tre-pi.jus.br/realms/tre/.well-known/openid-configuration</code></td>
+            </tr>
+            <tr>
+              <td><code>Client ID</code></td>
+              <td>ID do client registrado no IDP externo</td>
+              <td><code>keycloak-broker</code></td>
+            </tr>
+            <tr>
+              <td><code>Client Secret</code></td>
+              <td>Secret do client no IDP externo</td>
+              <td><code>********</code></td>
+            </tr>
+            <tr>
+              <td><code>Mappers</code></td>
+              <td>Transformam claims do IDP em atributos do KC</td>
+              <td><code>email → email, name → firstName</code></td>
+            </tr>
+            <tr>
+              <td><code>Sync Mode</code></td>
+              <td>Quando o mapper atualiza dados: IMPORT (só 1º login), FORCE (sempre), INHERIT (herda do IDP)</td>
+              <td><code>FORCE</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>First Login Flow</h3>
+
+      <p>Quando um usuário vindo de um IDP externo faz login pela primeira vez, o Keycloak precisa decidir o que fazer. O <strong>First Login Flow</strong> controla esse comportamento:</p>
+
+      <div class="interactive-box">
+        <div class="first-login-options">
+          <div class="flo-item">
+            <span class="flo-icon">📝</span>
+            <div>
+              <strong>Review Profile</strong>
+              <p>Mostra formulário para o usuário revisar/completar dados antes de criar a conta</p>
+            </div>
+          </div>
+          <div class="flo-item">
+            <span class="flo-icon">➕</span>
+            <div>
+              <strong>Create User If Unique</strong>
+              <p>Cria automaticamente um usuário local — mas só se não existir outro com mesmo email/username</p>
+            </div>
+          </div>
+          <div class="flo-item">
+            <span class="flo-icon">🔗</span>
+            <div>
+              <strong>Automatically Link Brokered Account</strong>
+              <p>Se já existe um usuário local com o mesmo email, vincula automaticamente (requer Trust Email)</p>
+            </div>
+          </div>
+          <div class="flo-item">
+            <span class="flo-icon">📧</span>
+            <div>
+              <strong>Confirm Link Existing Account</strong>
+              <p>Pede confirmação (email ou re-autenticação) antes de vincular a uma conta existente</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>OIDC vs SAML — qual protocolo usar?</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Aspecto</th>
+              <th>OIDC</th>
+              <th>SAML 2.0</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Formato</td>
+              <td>JSON (JWT)</td>
+              <td>XML</td>
+            </tr>
+            <tr>
+              <td>Configuração</td>
+              <td>Simples (Discovery URL auto-configura)</td>
+              <td>Complexa (metadata XML, certificados)</td>
+            </tr>
+            <tr>
+              <td>Uso típico</td>
+              <td>Aplicações modernas, APIs, SPAs</td>
+              <td>Governo, enterprise legado, federações</td>
+            </tr>
+            <tr>
+              <td>Tamanho do payload</td>
+              <td>Compacto</td>
+              <td>Verboso (XML)</td>
+            </tr>
+            <tr>
+              <td>Recomendação</td>
+              <td><strong>Prefira sempre que possível</strong></td>
+              <td>Use quando o IDP só suporta SAML</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Hide on Login Page e kc_idp_hint</h3>
+
+      <p>Nem sempre você quer mostrar o botão do IDP na tela de login:</p>
+
+      <div class="interactive-box">
+        <div class="hint-example">
+          <div class="hint-item">
+            <strong>Hide on Login Page = ON</strong>
+            <p>O botão do IDP não aparece. Útil quando o IDP é usado apenas programaticamente.</p>
+          </div>
+          <div class="hint-item">
+            <strong>kc_idp_hint</strong>
+            <p>Parâmetro na URL de login que força redirect direto para um IDP específico, sem mostrar a tela de login do Keycloak:</p>
+            <code class="code-url">https://keycloak/realms/meu-realm/protocol/openid-connect/auth?client_id=app&kc_idp_hint=tre-pi-keycloak&...</code>
+          </div>
+        </div>
+      </div>
+
+      <h3>Cenário real</h3>
+
+      <div class="interactive-box" style="border-left: 3px solid var(--accent);">
+        <h4 style="font-family: var(--font-display); color: var(--accent); margin-bottom: 12px;">🏛️ "TRE-PI quer que seus usuários façam login via o Keycloak deles"</h4>
+        <ol style="padding-left: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+          <li style="padding: 6px 0;">No Keycloak do TRE-PI: registrar um client <code>keycloak-broker</code> (confidential, com redirect URI do seu KC)</li>
+          <li style="padding: 6px 0;">No seu Keycloak: Identity Providers → Add → OpenID Connect v1.0</li>
+          <li style="padding: 6px 0;">Alias: <code>tre-pi-keycloak</code>, Display Name: <code>Login TRE-PI</code></li>
+          <li style="padding: 6px 0;">Discovery URL: <code>https://sso.tre-pi.jus.br/realms/tre/.well-known/openid-configuration</code></li>
+          <li style="padding: 6px 0;">Client ID: <code>keycloak-broker</code>, Client Secret: (fornecido pelo TRE-PI)</li>
+          <li style="padding: 6px 0;">Configurar First Login Flow: criar usuário automaticamente + vincular por email</li>
+          <li style="padding: 6px 0;">Resultado: botão "Login TRE-PI" aparece na tela de login do seu Keycloak</li>
+        </ol>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>Identity Brokering = delegação de confiança. Você confia que outro sistema autenticou o usuário corretamente. O Keycloak nunca vê a senha — ele recebe um token/assertion assinado e, a partir dele, cria a identidade local. É assim que funciona "Login com Google", "Login com Azure AD" e qualquer integração entre IDPs.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="02-user-federation.html">← Módulo anterior</a>
+        <a href="04-social-login.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    let brokerStep = 1;
+    const totalBrokerSteps = 6;
+
+    function showBrokerStep(n) {
+      document.querySelectorAll('.flow-step').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.flow-step[data-step="${n}"]`).classList.add('active');
+      document.getElementById('brokerIndicator').textContent = `${n} / ${totalBrokerSteps}`;
+      document.getElementById('btnPrevBroker').disabled = n === 1;
+      document.getElementById('btnNextBroker').disabled = n === totalBrokerSteps;
+    }
+
+    function nextBrokerStep() { if (brokerStep < totalBrokerSteps) { brokerStep++; showBrokerStep(brokerStep); } }
+    function prevBrokerStep() { if (brokerStep > 1) { brokerStep--; showBrokerStep(brokerStep); } }
+  </script>
+  <style>
+    .flow-steps { min-height: 100px; display: flex; align-items: center; justify-content: center; }
+    .flow-step { display: none; text-align: center; padding: 0 12px; }
+    .flow-step.active { display: block; }
+    .flow-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .flow-step p { color: var(--text-secondary); margin-bottom: 6px; }
+    .flow-step em { color: var(--accent); font-size: 0.85rem; }
+
+    .scene-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .step-indicator { font-size: 0.85rem; color: var(--text-secondary); min-width: 40px; text-align: center; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .use-cases { display: flex; flex-direction: column; gap: 12px; }
+    .use-case-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+    .uc-icon { font-size: 1.4rem; }
+    .use-case-item strong { font-size: 0.85rem; color: var(--text-primary); display: block; margin-bottom: 4px; }
+    .use-case-item p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+
+    .first-login-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .flo-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+    .flo-icon { font-size: 1.2rem; }
+    .flo-item strong { font-size: 0.85rem; color: var(--text-primary); display: block; margin-bottom: 4px; }
+    .flo-item p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+
+    .hint-example { display: flex; flex-direction: column; gap: 16px; }
+    .hint-item { padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+    .hint-item strong { font-size: 0.85rem; color: var(--text-primary); display: block; margin-bottom: 4px; }
+    .hint-item p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .info-table tr:last-child td { border-bottom: none; }
+    .info-table code { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .first-login-options { grid-template-columns: 1fr; }
+      .info-table { font-size: 0.75rem; }
+    }
+  </style>
+</body>
+</html>

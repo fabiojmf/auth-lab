@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Token Exchange | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">09 — Avançado</a> → <span>Token Exchange</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Token Exchange</h2>
+
+      <p>Token Exchange permite trocar um token por outro com características diferentes — audience, escopo ou identidade. É definido pela <strong>RFC 8693</strong> e resolve problemas reais em arquiteturas de microserviços.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🔄</span>
+        <h3>O Problema</h3>
+        <p>Serviço A tem um token do usuário, mas precisa chamar Serviço B que aceita apenas tokens com audience diferente. Como obter o token certo sem pedir login novamente?</p>
+      </div>
+
+      <div class="warning-box">
+        <span class="wb-icon">ℹ️</span>
+        <div>
+          <p><strong>Duas versões coexistem no Keycloak.</strong> O <em>Standard Token Exchange V2</em> é habilitado por padrão e totalmente suportado (apenas internal-to-internal). O <em>Legacy Token Exchange V1</em> (impersonation, external tokens) é preview/deprecated e requer <code>--features=token-exchange</code> + <code>--features=admin-fine-grained-authz</code>.</p>
+        </div>
+      </div>
+
+      <h3>Casos de Uso</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Caso</th><th>Descrição</th><th>Versão</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Audience swap</td><td>Token para serviço diferente no mesmo realm</td><td>V2 (suportado)</td></tr>
+            <tr><td>Downscoping</td><td>Token com menos permissões/audiences</td><td>V2 (suportado)</td></tr>
+            <tr><td>Delegação</td><td>Agir em nome do usuário em outro serviço</td><td>V1 (legacy)</td></tr>
+            <tr><td>Impersonation</td><td>Admin obtém token como outro usuário</td><td>V1 (legacy)</td></tr>
+            <tr><td>External token</td><td>Trocar token de IDP externo por token KC</td><td>V1 (legacy) / JWT Auth Grant</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Grant Type</h3>
+
+      <div class="code-block">grant_type=urn:ietf:params:oauth:grant-type:token-exchange</div>
+
+      <h3>Parâmetros da Request</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Parâmetro</th><th>Descrição</th><th>Obrigatório</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>subject_token</code></td><td>O token que você tem</td><td>Sim</td></tr>
+            <tr><td><code>subject_token_type</code></td><td><code>urn:ietf:params:oauth:token-type:access_token</code></td><td>Sim</td></tr>
+            <tr><td><code>requested_token_type</code></td><td>Tipo do token desejado</td><td>Não</td></tr>
+            <tr><td><code>audience</code></td><td>Client/serviço de destino</td><td>Não*</td></tr>
+            <tr><td><code>scope</code></td><td>Escopos desejados no novo token</td><td>Não</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Exemplo Completo</h3>
+
+      <div class="code-block"># Serviço A troca seu token por um token válido para Serviço B
+curl -X POST \
+  https://keycloak.example.com/realms/my-app/protocol/openid-connect/token \
+  -d "client_id=service-a" \
+  -d "client_secret=secret-a" \
+  -d "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+  -d "subject_token=eyJhbGciOiJSUzI1NiIs..." \
+  -d "subject_token_type=urn:ietf:params:oauth:token-type:access_token" \
+  -d "audience=service-b"
+
+# Resposta: novo access_token com audience=service-b
+{
+  "access_token": "eyJhbG...(novo token)...",
+  "token_type": "Bearer",
+  "expires_in": 300
+}</div>
+
+      <h3>Configuração: Standard Token Exchange (V2)</h3>
+
+      <p>O V2 é habilitado por padrão no KC 26+. Apenas troca internal-to-internal (audience swap entre clients do mesmo realm).</p>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content"><p>No client que fará o exchange (ex: <code>service-a</code>): ativar o switch <strong>Standard token exchange</strong> na aba Settings</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content"><p>O client deve ser <strong>confidential</strong> (não público)</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content"><p>O <code>subject_token</code> enviado deve ter o client solicitante como audience (<code>aud</code>)</p></div>
+        </div>
+      </div>
+
+      <p>Não requer fine-grained admin permissions nem feature flags adicionais.</p>
+
+      <h3>Configuração: Legacy Token Exchange (V1)</h3>
+
+      <p>Para impersonation, external-to-internal ou internal-to-external, use o V1 (preview/deprecated):</p>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content"><p>Habilitar features: <code>kc.sh start --features=token-exchange,admin-fine-grained-authz</code></p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content"><p>No client de destino: Permissions → habilitar → configurar policy <code>token-exchange</code></p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content"><p>Criar Client Policy que permite o client de origem fazer exchange</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-content"><p>Associar policy à permission "token-exchange" do client de destino</p></div>
+        </div>
+      </div>
+
+      <div class="warning-box">
+        <span class="wb-icon">⚠️</span>
+        <div>
+          <p><strong>V1 é deprecated.</strong> Será removido em versões futuras. Para internal-to-internal, use V2. Para external token exchange, considere JWT Authorization Grant (RFC 7523) + V2 como alternativa suportada.</p>
+        </div>
+      </div>
+
+      <h3>⚠️ Segurança</h3>
+
+      <div class="warning-box">
+        <span class="wb-icon">🔒</span>
+        <div>
+          <p><strong>Token exchange mal configurado = escalação de privilégios.</strong> Se qualquer client puder trocar tokens para qualquer outro, um atacante com acesso a um serviço compromete todos os outros.</p>
+        </div>
+      </div>
+
+      <ul>
+        <li>Restrinja <strong>quais clients</strong> podem fazer exchange para <strong>quais targets</strong></li>
+        <li>Audite eventos de token exchange (Event Listener)</li>
+        <li>Use escopos mínimos no token resultante</li>
+        <li>Monitore volume anormal de exchanges</li>
+      </ul>
+
+      <h3>Quando NÃO usar Token Exchange</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Situação</th><th>Alternativa mais simples</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Precisa apenas de audience diferente</td><td>Configure audience mapper no client</td></tr>
+            <tr><td>Comunicação serviço-a-serviço sem usuário</td><td>Use <code>client_credentials</code> grant</td></tr>
+            <tr><td>Contexto do usuário no downstream</td><td>Passe o token original (se audience permite)</td></tr>
+            <tr><td>Apenas precisa de menos scopes</td><td>Solicite menos scopes no login inicial</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Token exchange resolve problemas reais em microserviços — trocar tokens entre serviços com audiences diferentes, delegação e impersonation. Mas adiciona complexidade e risco de segurança. Use apenas quando alternativas mais simples (audience mapper, client_credentials) não resolvem.</p>
+      </div>
+      <nav class="module-nav">
+        <a href="05-multi-tenancy.html">← Multi-Tenancy</a>
+        <a href="index.html">Trilha 9 →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    .warning-box { background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; }
+    .wb-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .warning-box p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+    .steps-list { margin: 20px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+    .step-content p { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

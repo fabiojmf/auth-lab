@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realms: Espaços Isolados | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">02 — Instalação e Arquitetura</a> → <span>Realms: Espaços Isolados</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Realms: Espaços Isolados</h2>
+
+      <p>Um <strong>realm</strong> é o conceito mais fundamental do Keycloak. Pense nele como um universo isolado — com seus próprios usuários, aplicações e configurações. Nada vaza de um realm para outro.</p>
+
+      <h3>O que é um Realm</h3>
+
+      <div class="interactive-box">
+        <div class="sidebar-layout">
+          <div class="realm-nav">
+            <div class="realm-nav-item active" onclick="selectRealm(this, 'concept')">
+              <span>💡</span> Conceito
+            </div>
+            <div class="realm-nav-item" onclick="selectRealm(this, 'master')">
+              <span>👑</span> Master
+            </div>
+            <div class="realm-nav-item" onclick="selectRealm(this, 'custom')">
+              <span>🏢</span> Custom Realms
+            </div>
+            <div class="realm-nav-item" onclick="selectRealm(this, 'isolation')">
+              <span>🔒</span> Isolamento
+            </div>
+            <div class="realm-nav-item" onclick="selectRealm(this, 'when')">
+              <span>🤔</span> Quando criar
+            </div>
+          </div>
+          <div class="realm-detail" id="realmDetail">
+            <p id="realmDesc">Um realm é um espaço isolado dentro do Keycloak. Cada realm tem seus próprios usuários, clients, roles e configurações — completamente independente dos outros.</p>
+            <div id="realmExtra" class="detail-examples">Pense em cada realm como um "inquilino" (tenant). O que acontece em um realm não afeta os outros.</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Criando seu primeiro Realm</h3>
+
+      <div class="interactive-box">
+        <div class="steps-container">
+          <div class="create-realm-step active" data-step="1">
+            <div class="step-badge">1</div>
+            <h4>Abra o seletor de realms</h4>
+            <p>No canto superior esquerdo, clique no dropdown que mostra "master".</p>
+          </div>
+          <div class="create-realm-step" data-step="2">
+            <div class="step-badge">2</div>
+            <h4>Clique em "Create Realm"</h4>
+            <p>O botão aparece no topo do dropdown.</p>
+          </div>
+          <div class="create-realm-step" data-step="3">
+            <div class="step-badge">3</div>
+            <h4>Preencha o nome</h4>
+            <p>Realm name: <code>authlab</code></p>
+            <p>Enabled: <strong>ON</strong></p>
+          </div>
+          <div class="create-realm-step" data-step="4">
+            <div class="step-badge">4</div>
+            <h4>Clique em "Create"</h4>
+            <p>Pronto! Você será redirecionado para o novo realm. Note que o dropdown agora mostra "authlab".</p>
+          </div>
+        </div>
+        <div class="scene-controls">
+          <button class="btn btn-secondary" id="btnPrevRealm" onclick="prevRealmStep()" disabled>← Anterior</button>
+          <span class="step-indicator" id="realmStepIndicator">1 / 4</span>
+          <button class="btn" id="btnNextRealm" onclick="nextRealmStep()">Próximo →</button>
+        </div>
+      </div>
+
+      <h3>Isolamento total</h3>
+
+      <p>Cada realm é completamente independente:</p>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr><th>Aspecto</th><th>Isolamento</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Usuários</td><td>User "maria" no Realm A ≠ "maria" no Realm B</td></tr>
+            <tr><td>Clients</td><td>Cada realm tem seus próprios clients registrados</td></tr>
+            <tr><td>Roles</td><td>Role "admin" no Realm A não existe no Realm B</td></tr>
+            <tr><td>Sessões</td><td>Login no Realm A não autentica no Realm B</td></tr>
+            <tr><td>Tokens</td><td>Token emitido por Realm A é inválido no Realm B</td></tr>
+            <tr><td>Configurações</td><td>Cada realm tem suas próprias políticas de senha, temas, etc.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Quando criar múltiplos Realms</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>✅ Bons motivos</h4>
+          <ul>
+            <li>Multi-tenant: um realm por organização</li>
+            <li>Populações distintas: funcionários vs clientes</li>
+            <li>Requisitos de segurança diferentes</li>
+            <li>Isolamento regulatório (LGPD, GDPR)</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>⚠️ Pense duas vezes</h4>
+          <ul>
+            <li>Dev/Staging/Prod → prefira instâncias separadas</li>
+            <li>Muitos realms = mais manutenção</li>
+            <li>Se os usuários são os mesmos → um realm só</li>
+            <li>Realms não compartilham dados entre si</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Realm Settings (visão geral)</h3>
+
+      <p>Cada realm tem dezenas de configurações. Aqui um resumo — vamos detalhar no <a href="05-configuracao-realm.html" style="color: var(--accent);">Módulo 5</a>:</p>
+
+      <div class="interactive-box">
+        <div class="settings-preview">
+          <div class="setting-group" onclick="toggleSetting(this)">
+            <span class="setting-icon">⚙️</span> <strong>General</strong> — nome, display name
+            <div class="setting-detail">Nome interno e nome de exibição do realm. O nome interno não pode ser alterado depois.</div>
+          </div>
+          <div class="setting-group" onclick="toggleSetting(this)">
+            <span class="setting-icon">🔐</span> <strong>Login</strong> — registro, recuperação de senha
+            <div class="setting-detail">Controla se usuários podem se registrar, resetar senha, e opções de login.</div>
+          </div>
+          <div class="setting-group" onclick="toggleSetting(this)">
+            <span class="setting-icon">📧</span> <strong>Email</strong> — SMTP para verificação
+            <div class="setting-detail">Configuração do servidor de email para envio de verificações e resets.</div>
+          </div>
+          <div class="setting-group" onclick="toggleSetting(this)">
+            <span class="setting-icon">🎨</span> <strong>Themes</strong> — aparência das telas
+            <div class="setting-detail">Temas para login, conta do usuário, admin console e emails.</div>
+          </div>
+          <div class="setting-group" onclick="toggleSetting(this)">
+            <span class="setting-icon">⏱️</span> <strong>Sessions</strong> — timeouts
+            <div class="setting-detail">Quanto tempo sessões ficam ativas antes de expirar.</div>
+          </div>
+          <div class="setting-group" onclick="toggleSetting(this)">
+            <span class="setting-icon">🎫</span> <strong>Tokens</strong> — lifespans
+            <div class="setting-detail">Tempo de vida dos access tokens, refresh tokens e sessões SSO.</div>
+          </div>
+          <div class="setting-group" onclick="toggleSetting(this)">
+            <span class="setting-icon">🛡️</span> <strong>Security Defenses</strong> — brute force, headers
+            <div class="setting-detail">Proteção contra ataques de força bruta e headers de segurança HTTP.</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Exercício</h3>
+
+      <div class="interactive-box" style="border-left: 4px solid var(--accent);">
+        <h4 style="font-family: var(--font-display);">🧪 Crie o realm do laboratório</h4>
+        <p style="color: var(--text-secondary); margin-bottom: 12px;">Crie um realm chamado <code>authlab</code>. Você vai usá-lo em todos os exercícios deste treinamento.</p>
+        <label class="checklist-item"><input type="checkbox"><span>Realm "authlab" criado e habilitado</span></label>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>Um realm = um espaço de identidade isolado. O Master é só para administração. Crie sempre um realm dedicado para suas aplicações.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="01-subindo-keycloak.html">← Módulo anterior</a>
+        <a href="03-admin-console-tour.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    let realmStep = 1;
+    const totalRealmSteps = 4;
+    function showRealmStep(n) {
+      document.querySelectorAll('.create-realm-step').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.create-realm-step[data-step="${n}"]`).classList.add('active');
+      document.getElementById('realmStepIndicator').textContent = `${n} / ${totalRealmSteps}`;
+      document.getElementById('btnPrevRealm').disabled = n === 1;
+      document.getElementById('btnNextRealm').disabled = n === totalRealmSteps;
+    }
+    function nextRealmStep() { if (realmStep < totalRealmSteps) { realmStep++; showRealmStep(realmStep); } }
+    function prevRealmStep() { if (realmStep > 1) { realmStep--; showRealmStep(realmStep); } }
+
+    const realmData = {
+      concept: { title: '💡 Conceito', desc: 'Um realm é um espaço isolado dentro do Keycloak. Cada realm tem seus próprios usuários, clients, roles e configurações — completamente independente dos outros.', extra: 'Pense em cada realm como um "inquilino" (tenant). O que acontece em um realm não afeta os outros.' },
+      master: { title: '👑 Master', desc: 'Realm especial criado automaticamente. Serve exclusivamente para administração: gerenciar outros realms, criar admins globais, configurar o Keycloak como um todo.', extra: '🚫 <strong>Nunca</strong> use o Master para suas aplicações. Ele é exclusivo para administração. Crie um realm separado para cada projeto.' },
+      custom: { title: '🏢 Custom Realms', desc: 'Realms que você cria para suas aplicações. Cada um tem sua própria base de usuários, clients, roles, temas e configurações de segurança.', extra: 'Exemplo: realm "minha-empresa" com os usuários e apps da empresa. Ou realm "authlab" para este treinamento.' },
+      isolation: { title: '🔒 Isolamento', desc: 'Realms são completamente isolados entre si. Um usuário "admin" no Realm A é uma pessoa diferente do "admin" no Realm B. Tokens de um realm não funcionam em outro.', extra: 'Isso garante segurança: um problema em um realm não afeta os outros. Cada realm é um universo independente.' },
+      when: { title: '🤔 Quando criar múltiplos', desc: 'Crie realms separados quando precisa de isolamento total: multi-tenant (um realm por organização), populações diferentes (funcionários vs clientes), ou ambientes separados.', extra: 'Para este treinamento, vamos criar um realm chamado "authlab" — seu espaço de prática.' }
+    };
+
+    function selectRealm(el, key) {
+      const data = realmData[key];
+      document.getElementById('realmDesc').innerHTML = data.desc;
+      document.getElementById('realmExtra').innerHTML = data.extra;
+      document.querySelectorAll('.realm-nav-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function toggleSetting(el) { el.classList.toggle('open'); }
+  </script>
+  <style>
+    .create-realm-step { display: none; padding: 16px 0; }
+    .create-realm-step.active { display: block; }
+    .step-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: var(--accent); color: #fff; border-radius: 50%; font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; }
+    .create-realm-step h4 { font-family: var(--font-display); margin-bottom: 8px; }
+    .create-realm-step p { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px; }
+    .scene-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .step-indicator { font-size: 0.85rem; color: var(--text-secondary); min-width: 40px; text-align: center; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .sidebar-layout { display: flex; gap: 20px; }
+    .realm-nav { display: flex; flex-direction: column; gap: 2px; min-width: 180px; }
+    .realm-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: all 0.15s; border: 1px solid transparent; }
+    .realm-nav-item:hover { background: var(--bg-card); border-color: var(--border); }
+    .realm-nav-item.active { background: var(--bg-card); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+    .realm-detail { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; flex: 1; }
+    .realm-detail p { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.6; }
+    .detail-examples { font-size: 0.85rem; color: var(--text-secondary); padding-top: 10px; border-top: 1px solid var(--border); }
+
+    .settings-preview { display: flex; flex-direction: column; gap: 8px; }
+    .setting-group { padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 0.9rem; transition: background 0.2s; }
+    .setting-group:hover { background: var(--bg-card); }
+    .setting-detail { display: none; margin-top: 8px; font-size: 0.8rem; color: var(--text-secondary); padding-top: 8px; border-top: 1px solid var(--border); }
+    .setting-group.open .setting-detail { display: block; }
+
+    .checklist-item { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer; }
+    .checklist-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .info-table tr:last-child td { border-bottom: none; }
+
+    @media (max-width: 640px) {
+      .sidebar-layout { flex-direction: column; }
+      .comparison { grid-template-columns: 1fr; }
+      .info-table { font-size: 0.75rem; }
+      .scene-controls .btn { padding: 8px 12px; font-size: 0.75rem; }
+    }
+  </style>
+</body>
+</html>

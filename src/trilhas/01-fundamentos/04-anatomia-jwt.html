@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anatomia de um JWT | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">01 — Fundamentos</a> → <span>Anatomia de um JWT</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Anatomia de um JWT</h2>
+
+      <p>No módulo anterior você viu que o Keycloak emite tokens (access_token, id_token, refresh_token). Agora vamos abrir um e ver o que tem dentro.</p>
+
+      <p>Esses tokens são <strong>JWTs</strong> — JSON Web Tokens. Parecem uma string aleatória, mas têm estrutura clara.</p>
+
+      <h3>A estrutura: 3 partes separadas por pontos</h3>
+
+      <div class="jwt-structure">
+        <div class="jwt-part jwt-header" onclick="highlightPart('header')">
+          <span class="jwt-part-label">Header</span>
+          <span class="jwt-part-desc">Algoritmo e tipo</span>
+        </div>
+        <span class="jwt-dot">.</span>
+        <div class="jwt-part jwt-payload" onclick="highlightPart('payload')">
+          <span class="jwt-part-label">Payload</span>
+          <span class="jwt-part-desc">Os dados (claims)</span>
+        </div>
+        <span class="jwt-dot">.</span>
+        <div class="jwt-part jwt-signature" onclick="highlightPart('signature')">
+          <span class="jwt-part-label">Signature</span>
+          <span class="jwt-part-desc">A assinatura</span>
+        </div>
+      </div>
+
+      <div class="part-explanation" id="explanation-header">
+        <h4>Header</h4>
+        <p>Diz qual algoritmo foi usado para assinar o token e o tipo (sempre "JWT"). Também contém o <code>kid</code> — o identificador da chave usada na assinatura.</p>
+        <pre>{ "alg": "RS256", "typ": "JWT", "kid": "5vrDgXBK..." }</pre>
+      </div>
+      <div class="part-explanation" id="explanation-payload">
+        <h4>Payload</h4>
+        <p>Os dados reais — quem é o usuário, quando o token expira, quais permissões ele tem. Cada campo é uma "claim".</p>
+        <pre>{ "sub": "user-123", "name": "Maria", "email": "maria@empresa.com", "exp": 1716300000 }</pre>
+      </div>
+      <div class="part-explanation" id="explanation-signature">
+        <h4>Signature</h4>
+        <p>Garante que ninguém alterou o token. O Keycloak assina com sua chave privada. Quem recebe o token verifica com a chave pública. Se alguém mudar um byte do payload, a assinatura não bate.</p>
+        <pre>RSASHA256(base64(header) + "." + base64(payload), chave_privada)</pre>
+      </div>
+
+      <h3>Decodificador interativo</h3>
+
+      <div class="key-takeaway" style="border-left-color: #e74c3c;">
+        <h4>⚠️ Importante</h4>
+        <p>JWT não é criptografado — é apenas codificado em Base64. Qualquer um pode ler o conteúdo (inclusive você, agora). A assinatura garante que ninguém <em>alterou</em> o conteúdo, mas não esconde ele. Cuidado ao colar tokens de produção em sites externos — prefira decodificar localmente, como aqui.</p>
+      </div>
+
+      <p>Cole um JWT abaixo (ou use o exemplo) para ver suas partes decodificadas:</p>
+
+      <div class="interactive-box decoder-box">
+        <div class="decoder-input">
+          <textarea id="jwtInput" placeholder="Cole um JWT aqui..." rows="4"></textarea>
+          <div class="decoder-buttons">
+            <button class="btn btn-secondary" onclick="loadExample()">Usar exemplo</button>
+            <button class="btn btn-secondary" onclick="clearDecoder()">Limpar</button>
+          </div>
+        </div>
+
+        <div class="decoder-output" id="decoderOutput">
+          <div class="decoded-section">
+            <h4 class="decoded-header-title">Header</h4>
+            <pre id="decodedHeader">—</pre>
+          </div>
+          <div class="decoded-section">
+            <h4 class="decoded-payload-title">Payload (Claims)</h4>
+            <pre id="decodedPayload">—</pre>
+          </div>
+          <div class="decoded-section">
+            <h4 class="decoded-signature-title">Signature</h4>
+            <pre id="decodedSignature">—</pre>
+          </div>
+        </div>
+      </div>
+
+      <h3>Claims importantes</h3>
+
+      <p>O payload contém "claims" — afirmações sobre o usuário e o token. As mais comuns:</p>
+
+      <div class="claims-table">
+        <div class="claim-row">
+          <code>sub</code>
+          <span>Subject — identificador único do usuário</span>
+        </div>
+        <div class="claim-row">
+          <code>iss</code>
+          <span>Issuer — quem emitiu o token (URL do Keycloak)</span>
+        </div>
+        <div class="claim-row">
+          <code>aud</code>
+          <span>Audience — para quem o token foi emitido (qual client/API deve aceitá-lo)</span>
+        </div>
+        <div class="claim-row">
+          <code>exp</code>
+          <span>Expiration — quando o token expira (timestamp Unix)</span>
+        </div>
+        <div class="claim-row">
+          <code>iat</code>
+          <span>Issued At — quando o token foi emitido</span>
+        </div>
+        <div class="claim-row">
+          <code>azp</code>
+          <span>Authorized Party — o client que pediu o token</span>
+        </div>
+        <div class="claim-row">
+          <code>realm_access</code>
+          <span>Roles globais do usuário no realm</span>
+        </div>
+        <div class="claim-row">
+          <code>resource_access</code>
+          <span>Roles do usuário por client específico</span>
+        </div>
+        <div class="claim-row">
+          <code>scope</code>
+          <span>Scopes que foram concedidos</span>
+        </div>
+      </div>
+
+      <h3>Por que isso importa na prática?</h3>
+
+      <p>Quando algo dá errado (token rejeitado, permissão negada, usuário não reconhecido), a primeira coisa a fazer é <strong>decodificar o token</strong> e olhar as claims:</p>
+
+      <ul class="feature-list">
+        <li><code>exp</code> já passou? → Token expirado</li>
+        <li><code>iss</code> é de outro ambiente? → Token de staging sendo usado em produção</li>
+        <li><code>resource_access</code> não tem o role esperado? → Usuário sem permissão naquele client</li>
+        <li><code>azp</code> é outro client? → Token emitido para aplicação errada</li>
+      </ul>
+
+      <h3>Decodificar ≠ Validar</h3>
+
+      <p>Decodificar um JWT (como fizemos acima) é apenas <strong>ler</strong> o conteúdo. Qualquer um pode fazer isso. <strong>Validar</strong> é confirmar que o token é legítimo. São coisas diferentes:</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>Decodificar</h4>
+          <ul>
+            <li>Ler header e payload</li>
+            <li>Qualquer um pode fazer</li>
+            <li>Não garante nada</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>Validar</h4>
+          <ul>
+            <li>Verificar assinatura (chave pública)</li>
+            <li>Checar <code>exp</code> (expirou?)</li>
+            <li>Checar <code>iss</code> (veio do meu Keycloak?)</li>
+            <li>Checar <code>aud</code> (é para minha API?)</li>
+          </ul>
+        </div>
+      </div>
+
+      <p>A chave pública para validar a assinatura fica disponível no endpoint JWKS do Keycloak:</p>
+      <pre>GET /realms/{realm}/protocol/openid-connect/certs</pre>
+      <p>Frameworks como Spring Security e bibliotecas como <code>jose</code> (Node.js) fazem essa validação automaticamente. Nunca confie em um token apenas decodificando — sempre valide.</p>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>Saber ler e validar um JWT é a habilidade #1 de troubleshooting em SSO. Token rejeitado? Decodifique e olhe as claims. A resposta quase sempre está ali.<br><br><strong>Próximos passos:</strong> na Trilha 02 você configura o Keycloak, e na Trilha 03 executa cada fluxo OAuth2 na prática.</p>
+      </div>
+
+      <section data-quiz>
+        <h3>🧠 Teste seu entendimento</h3>
+        <script type="application/json">[
+          {"q": "Um JWT é composto por quantas partes?", "options": ["2 (header + payload)", "3 (header + payload + signature)", "4 (header + payload + signature + key)"], "answer": 1, "explanation": "JWT = header.payload.signature, separados por pontos."},
+          {"q": "A signature do JWT serve para:", "options": ["Criptografar o conteúdo", "Garantir que o token não foi alterado", "Esconder os dados do payload"], "answer": 1, "explanation": "A assinatura garante integridade. O payload é apenas base64 (legível), não criptografado."},
+          {"q": "O campo exp no payload indica:", "options": ["O emissor do token", "Quando o token expira", "O algoritmo usado"], "answer": 1, "explanation": "exp = expiration time. Após esse timestamp, o token não é mais válido."}
+        ]</script>
+      </section>
+
+      <nav class="module-nav">
+        <a href="03-oauth2-oidc.html">← Módulo anterior</a>
+        <a href="index.html">Concluir Trilha 1 ✓</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    const exampleJWT = 'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI1dnJEZ1hCS21FLTdFb3J2a0U1TXU5VmxJZF9JU2dsMnY3QWYyM25EdkRVIn0.eyJleHAiOjE3MTYzMDAwMDAsImlhdCI6MTcxNjI5NjQwMCwianRpIjoiOWE2ZjM5MmUtNTI1Ny00Y2Q1LWJiODYtMDNmZWRkMWY0MjZkIiwiaXNzIjoiaHR0cHM6Ly9zc28uZXhlbXBsby5jb20vYXV0aC9yZWFsbXMvbWV1LXJlYWxtIiwiYXVkIjoibWluaGEtYXBwIiwic3ViIjoiNGVlMzczZGQtNjQ5MS00NzRiLTk2ZTEtNzYxZTM4NTczMjhmIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoibWluaGEtYXBwIiwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsIm5hbWUiOiJNYXJpYSBTaWx2YSIsImVtYWlsIjoibWFyaWFAZW1wcmVzYS5jb20iLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsidXNlciIsImFkbWluIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsibWluaGEtYXBwIjp7InJvbGVzIjpbImVkaXRvciIsInZpZXdlciJdfX19.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+
+    function loadExample() {
+      document.getElementById('jwtInput').value = exampleJWT;
+      decodeJWT(exampleJWT);
+    }
+
+    function clearDecoder() {
+      document.getElementById('jwtInput').value = '';
+      document.getElementById('decodedHeader').textContent = '—';
+      document.getElementById('decodedPayload').textContent = '—';
+      document.getElementById('decodedSignature').textContent = '—';
+    }
+
+    function decodeBase64URL(str) {
+      str = str.replace(/-/g, '+').replace(/_/g, '/');
+      const pad = str.length % 4;
+      if (pad) str += '='.repeat(4 - pad);
+      return JSON.parse(atob(str));
+    }
+
+    function decodeJWT(token) {
+      try {
+        const parts = token.trim().split('.');
+        if (parts.length !== 3) throw new Error('Invalid JWT');
+
+        const header = decodeBase64URL(parts[0]);
+        const payload = decodeBase64URL(parts[1]);
+
+        document.getElementById('decodedHeader').textContent = JSON.stringify(header, null, 2);
+        document.getElementById('decodedPayload').textContent = JSON.stringify(payload, null, 2);
+        document.getElementById('decodedSignature').textContent = parts[2].substring(0, 40) + '...';
+        document.getElementById('decoderOutput').classList.add('visible');
+      } catch (e) {
+        document.getElementById('decodedHeader').textContent = '❌ Token inválido';
+        document.getElementById('decodedPayload').textContent = '';
+        document.getElementById('decodedSignature').textContent = '';
+      }
+    }
+
+    document.getElementById('jwtInput').addEventListener('input', (e) => {
+      if (e.target.value.trim()) decodeJWT(e.target.value);
+    });
+
+    // Part highlight
+    function highlightPart(part) {
+      document.querySelectorAll('.part-explanation').forEach(el => el.classList.remove('visible'));
+      document.getElementById(`explanation-${part}`).classList.add('visible');
+      document.querySelectorAll('.jwt-part').forEach(el => el.classList.remove('highlighted'));
+      document.querySelector(`.jwt-${part}`).classList.add('highlighted');
+    }
+  </script>
+  <style>
+    .jwt-structure { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 32px 0; flex-wrap: wrap; }
+    .jwt-part { background: var(--bg-secondary); border: 2px solid var(--border); border-radius: 8px; padding: 16px 20px; text-align: center; cursor: pointer; transition: all var(--transition); }
+    .jwt-part:hover, .jwt-part.highlighted { transform: translateY(-2px); }
+    .jwt-header:hover, .jwt-header.highlighted { border-color: #e74c3c; background: rgba(231, 76, 60, 0.08); }
+    .jwt-payload:hover, .jwt-payload.highlighted { border-color: #9b59b6; background: rgba(155, 89, 182, 0.08); }
+    .jwt-signature:hover, .jwt-signature.highlighted { border-color: #2ecc71; background: rgba(46, 204, 113, 0.08); }
+    .jwt-part-label { display: block; font-weight: 600; font-size: 0.9rem; }
+    .jwt-part-desc { display: block; font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; }
+    .jwt-dot { font-size: 1.5rem; font-weight: 700; color: var(--text-secondary); }
+
+    .part-explanation { display: none; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+    .part-explanation.visible { display: block; }
+    .part-explanation h4 { margin-bottom: 8px; }
+    .part-explanation p { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; }
+    .part-explanation pre { font-size: 0.8rem; margin: 0; }
+
+    .decoder-box { padding: 24px; }
+    .decoder-input { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    .decoder-input textarea { width: 100%; font-family: var(--mono); font-size: 0.8rem; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); color: var(--text-primary); resize: vertical; }
+    .decoder-input button { align-self: flex-start; }
+    .decoder-buttons { display: flex; gap: 8px; }
+
+    .decoder-output { display: flex; flex-direction: column; gap: 16px; }
+    .decoded-section h4 { font-size: 0.85rem; margin-bottom: 8px; }
+    .decoded-header-title { color: #e74c3c; }
+    .decoded-payload-title { color: #9b59b6; }
+    .decoded-signature-title { color: #2ecc71; }
+    .decoded-section pre { font-size: 0.8rem; margin: 0; white-space: pre-wrap; word-break: break-all; }
+
+    .claims-table { display: flex; flex-direction: column; gap: 8px; margin: 20px 0; }
+    .claim-row { display: flex; align-items: baseline; gap: 16px; padding: 10px 16px; background: var(--bg-secondary); border-radius: 8px; }
+    .claim-row code { font-size: 0.85rem; color: var(--accent); min-width: 130px; font-weight: 600; }
+    .claim-row span { font-size: 0.85rem; color: var(--text-secondary); }
+
+    .feature-list { padding-left: 20px; margin: 16px 0; }
+    .feature-list li { padding: 6px 0; color: var(--text-secondary); font-size: 0.9rem; }
+    .feature-list code { color: var(--accent); }
+    @media (max-width: 640px) {
+      .claims-table .claim-row { flex-direction: column; gap: 4px; }
+      .claims-table .claim-row code { min-width: auto; }
+    }
+  </style>
+</body>
+</html>

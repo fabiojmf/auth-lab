@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Admin (REST) | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">09 — Avançado</a> → <span>API Admin (REST)</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>API Admin (REST)</h2>
+
+      <p>O Keycloak expõe uma API REST completa para <strong>tudo</strong> que o Admin Console faz. Qualquer operação — criar clients, gerenciar usuários, configurar realms — pode ser automatizada via HTTP.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🤖</span>
+        <h3>Por que usar a API?</h3>
+        <p>Automação, CI/CD, scripts de migração, integração com ferramentas externas e dashboards customizados.</p>
+      </div>
+
+      <h3>Autenticação na API</h3>
+
+      <p>Primeiro, obtenha um token de admin:</p>
+
+      <div class="code-block">curl -X POST \
+  https://keycloak.example.com/realms/master/protocol/openid-connect/token \
+  -d "client_id=admin-cli" \
+  -d "username=admin" \
+  -d "password=admin" \
+  -d "grant_type=password"</div>
+
+      <p>Ou use uma <strong>service account</strong> com roles de <code>realm-management</code> para evitar credenciais de usuário em scripts.</p>
+
+      <h3>Base URL</h3>
+
+      <div class="code-block">https://keycloak.example.com/admin/realms/{realm}/</div>
+
+      <h3>Operações Comuns</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Operação</th><th>Método</th><th>Endpoint</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Listar clients</td><td>GET</td><td><code>/admin/realms/{realm}/clients</code></td></tr>
+            <tr><td>Criar client</td><td>POST</td><td><code>/admin/realms/{realm}/clients</code></td></tr>
+            <tr><td>Buscar usuários</td><td>GET</td><td><code>/admin/realms/{realm}/users?search=maria</code></td></tr>
+            <tr><td>Criar usuário</td><td>POST</td><td><code>/admin/realms/{realm}/users</code></td></tr>
+            <tr><td>Definir senha</td><td>PUT</td><td><code>/admin/realms/{realm}/users/{id}/reset-password</code></td></tr>
+            <tr><td>Atribuir role</td><td>POST</td><td><code>/admin/realms/{realm}/users/{id}/role-mappings/realm</code></td></tr>
+            <tr><td>Exportar realm</td><td>GET</td><td><code>/admin/realms/{realm}</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Exemplo: Criar Usuário com Senha</h3>
+
+      <div class="code-block"># Criar usuário
+curl -X POST \
+  https://kc.example.com/admin/realms/my-app/users \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "maria",
+    "email": "maria@example.com",
+    "enabled": true,
+    "firstName": "Maria",
+    "lastName": "Silva"
+  }'
+
+# Definir senha (pegar ID do Location header ou buscar)
+curl -X PUT \
+  https://kc.example.com/admin/realms/my-app/users/$USER_ID/reset-password \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "password",
+    "value": "senha-segura-123",
+    "temporary": false
+  }'</div>
+
+      <h3>Paginação</h3>
+
+      <p>Endpoints que retornam listas suportam paginação:</p>
+
+      <div class="code-block">GET /admin/realms/my-app/users?first=0&max=100</div>
+
+      <p>O padrão é <code>max=100</code>. Para buscar todos, itere incrementando <code>first</code> até receber lista vazia.</p>
+
+      <h3>Tratamento de Erros</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Status</th><th>Causa</th><th>Solução</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>401</code></td><td>Token expirado ou inválido</td><td>Renovar token antes de cada batch</td></tr>
+            <tr><td><code>403</code></td><td>Permissões insuficientes</td><td>Verificar roles da service account</td></tr>
+            <tr><td><code>409</code></td><td>Conflito (recurso já existe)</td><td>Verificar existência antes de criar</td></tr>
+            <tr><td><code>404</code></td><td>Recurso não encontrado</td><td>Verificar realm/ID corretos</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Client Libraries</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Linguagem</th><th>Biblioteca</th><th>Tipo</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>JavaScript/TS</td><td><code>@keycloak/keycloak-admin-client</code></td><td>Oficial</td></tr>
+            <tr><td>Java</td><td><code>keycloak-admin-client</code> (Maven)</td><td>Oficial</td></tr>
+            <tr><td>Python</td><td><code>python-keycloak</code></td><td>Comunidade</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Casos de Uso Reais</h3>
+
+      <ul>
+        <li><strong>CI/CD:</strong> provisionar clients automaticamente no deploy</li>
+        <li><strong>Migração:</strong> scripts para importar usuários de outro sistema</li>
+        <li><strong>Bulk ops:</strong> desabilitar usuários inativos, atribuir roles em massa</li>
+        <li><strong>Dashboards:</strong> painel customizado com métricas de usuários/sessões</li>
+      </ul>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Tudo que você faz no Admin Console pode ser automatizado via API REST. Use service accounts com roles mínimas, trate erros de token expirado, e pagine resultados. É a base para qualquer automação séria com Keycloak.</p>
+      </div>
+      <nav class="module-nav">
+        <a href="02-custom-spis.html">← Custom SPIs</a>
+        <a href="04-terraform.html">Terraform →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

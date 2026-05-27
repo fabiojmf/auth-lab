@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Tenancy | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">09 — Avançado</a> → <span>Multi-Tenancy</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Multi-Tenancy</h2>
+
+      <p>Multi-tenancy é servir múltiplas organizações (tenants) a partir de uma única instância Keycloak. Não existe solução perfeita — cada abordagem tem trade-offs.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🏢</span>
+        <h3>O Dilema Central</h3>
+        <p>Isolamento completo (seguro, mas caro) vs recurso compartilhado (eficiente, mas complexo)?</p>
+      </div>
+
+      <h3>Abordagem 1: Um Realm por Tenant</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>✅ Vantagens</h4>
+          <div class="comp-field">Isolamento completo (users, clients, config)</div>
+          <div class="comp-field">Cada tenant tem login page própria</div>
+          <div class="comp-field">Branding independente por tenant</div>
+          <div class="comp-field">IDPs diferentes por tenant</div>
+          <div class="comp-field">Configuração simples e intuitiva</div>
+        </div>
+        <div class="comparison-side">
+          <h4>❌ Desvantagens</h4>
+          <div class="comp-field">Escala limitada (~100-500 realms)</div>
+          <div class="comp-field">Cada realm consome memória/CPU</div>
+          <div class="comp-field">Overhead de gerenciamento</div>
+          <div class="comp-field">Automação obrigatória (Admin API/Terraform)</div>
+          <div class="comp-field">Monitoramento mais complexo</div>
+        </div>
+      </div>
+
+      <h3>Abordagem 2: Realm Único com Groups/Attributes</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>✅ Vantagens</h4>
+          <div class="comp-field">Escala para milhares de tenants</div>
+          <div class="comp-field">Menor consumo de recursos</div>
+          <div class="comp-field">Gerenciamento centralizado</div>
+          <div class="comp-field">Um único ponto de configuração</div>
+        </div>
+        <div class="comparison-side">
+          <h4>❌ Desvantagens</h4>
+          <div class="comp-field">Sem isolamento real entre tenants</div>
+          <div class="comp-field">Autorização complexa na aplicação</div>
+          <div class="comp-field">Login page compartilhada</div>
+          <div class="comp-field">Risco de vazamento entre tenants</div>
+        </div>
+      </div>
+
+      <p>Nesta abordagem, o tenant é identificado por um <strong>user attribute</strong> ou <strong>group</strong>, e incluído no token via protocol mapper:</p>
+
+      <div class="code-block">// Token com claim de tenant (via mapper)
+{
+  "sub": "user-123",
+  "tenant_id": "acme-corp",
+  "realm_access": { "roles": ["user"] }
+}
+// A aplicação usa tenant_id para filtrar dados</div>
+
+      <h3>Abordagem 3: Organizations (Keycloak 25+)</h3>
+
+      <div class="warning-box">
+        <span class="wb-icon">🧪</span>
+        <div>
+          <p><strong>Introduzido no Keycloak 25 (preview), GA no Keycloak 26.</strong> Organizations oferece suporte nativo a multi-tenancy dentro de um realm — membros, IDPs por organização e domínios vinculados. Desde KC 26 é uma feature totalmente suportada.</p>
+        </div>
+      </div>
+
+      <h3>Como Escolher?</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Necessidade</th><th>Abordagem Recomendada</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Isolamento completo obrigatório</td><td>Realm por tenant</td></tr>
+            <tr><td>1000+ tenants</td><td>Realm único (realms não escalam tanto)</td></tr>
+            <tr><td>IDPs diferentes por tenant</td><td>Realm por tenant ou Organizations</td></tr>
+            <tr><td>SaaS simples, tenant = atributo</td><td>Realm único com groups</td></tr>
+            <tr><td>Branding diferente por tenant</td><td>Realm por tenant (theme por realm)</td></tr>
+            <tr><td>Compliance/regulatório rígido</td><td>Realm por tenant (ou instâncias separadas)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Patterns: Realm por Tenant</h3>
+
+      <ul>
+        <li><strong>Criação dinâmica:</strong> Admin API cria realm no onboarding do tenant</li>
+        <li><strong>Theme compartilhado:</strong> um theme com branding dinâmico via realm attributes</li>
+        <li><strong>Roteamento:</strong> subdomínio → realm no reverse proxy (<code>acme.auth.example.com</code> → realm <code>acme</code>)</li>
+        <li><strong>Terraform:</strong> módulo reutilizável que cria realm + clients + roles padrão</li>
+      </ul>
+
+      <h3>Patterns: Realm Único</h3>
+
+      <ul>
+        <li><strong>Authenticator customizado:</strong> SPI que seleciona tenant no login (por domínio do email, por exemplo)</li>
+        <li><strong>Protocol Mapper:</strong> inclui <code>tenant_id</code> no token baseado em group ou attribute</li>
+        <li><strong>Autorização na app:</strong> middleware que filtra dados pelo <code>tenant_id</code> do token</li>
+        <li><strong>Groups hierárquicos:</strong> <code>/tenants/acme/admins</code>, <code>/tenants/acme/users</code></li>
+      </ul>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Não existe solução perfeita de multi-tenancy. Realm por tenant dá isolamento mas não escala infinitamente. Realm único escala mas exige autorização complexa na aplicação. Escolha baseado em: necessidade de isolamento, número de tenants e budget de complexidade.</p>
+      </div>
+      <nav class="module-nav">
+        <a href="04-terraform.html">← Terraform</a>
+        <a href="06-token-exchange.html">Token Exchange →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    .warning-box { background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; }
+    .wb-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .warning-box p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backup e Recovery | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">08 — Operação em Produção</a> → <span>Backup e Recovery</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Backup e Recovery</h2>
+
+      <p>O banco de dados do Keycloak contém <strong>tudo</strong>: usuários, realms, clients, roles, sessões. Perder esse banco é perder o acesso de todos os sistemas conectados. Backup não é opcional.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">💾</span>
+        <h3>Backup = banco de dados</h3>
+        <p>O banco é a peça crítica. Todo o resto (binários, themes, config) é reproduzível. O banco não é.</p>
+      </div>
+
+      <h3>O que fazer backup</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>✅ Fazer backup</h4>
+          <div class="comp-field"><strong>Banco de dados</strong> — a peça crítica</div>
+          <div class="comp-field">Realm exports (JSON) — config-as-code</div>
+          <div class="comp-field">Custom themes/providers (JARs)</div>
+          <div class="comp-field">Certificados TLS</div>
+          <div class="comp-field">keycloak.conf / documentação de env vars</div>
+        </div>
+        <div class="comparison-side">
+          <h4>❌ NÃO precisa backup</h4>
+          <div class="comp-field">Cache Infinispan (efêmero, reconstrói do DB)</div>
+          <div class="comp-field">Arquivos H2 (não devem existir em prod)</div>
+          <div class="comp-field">Binários do Keycloak (baixa de novo)</div>
+          <div class="comp-field">Logs antigos (já estão no log aggregator)</div>
+        </div>
+      </div>
+
+      <h3>Estratégias de Backup do Banco</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Método</th><th>Ferramenta</th><th>Vantagem</th><th>Quando usar</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Logical backup</td><td><code>pg_dump</code></td><td>Portável, legível</td><td>Bancos pequenos/médios</td></tr>
+            <tr><td>Physical backup</td><td><code>pg_basebackup</code></td><td>Restore rápido</td><td>Bancos grandes (>10GB)</td></tr>
+            <tr><td>Point-in-time</td><td>WAL archiving</td><td>Recupera até o segundo exato</td><td>RPO mínimo</td></tr>
+            <tr><td>Cloud managed</td><td>RDS Snapshots / Cloud SQL</td><td>Zero operação</td><td>Infraestrutura cloud</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block"># Backup lógico (PostgreSQL)
+pg_dump -h db-host -U keycloak -d keycloak -F c -f backup_$(date +%Y%m%d).dump
+
+# Restore
+pg_restore -h db-host -U keycloak -d keycloak -c backup_20240115.dump
+
+# Backup automático diário (cron)
+0 2 * * * pg_dump -h db -U keycloak -d keycloak -F c -f /backups/kc_$(date +\%Y\%m\%d).dump</div>
+
+      <h3>Realm Export / Import</h3>
+
+      <div class="warning-box">
+        <span class="wb-icon">⚠️</span>
+        <p><strong>Export NÃO é backup completo!</strong> O export de realm inclui hashes de senha, mas é lento e consome muita memória em realms grandes (10k+ usuários). Pode causar OOM ou timeout. Use para migrar configuração entre ambientes ou como backup complementar de realms pequenos — nunca como estratégia principal de backup. O backup do banco (pg_dump) é sempre a fonte primária.</p>
+      </div>
+
+      <div class="code-block"># Export de realm (executar com KC parado ou em instância separada)
+kc.sh export --dir=/export --realm=meu-realm --users=realm_file
+
+# Import na inicialização (KC 20+)
+kc.sh start --import-realm --dir=/import
+
+# Import standalone (sem iniciar o servidor)
+kc.sh import --dir=/import</div>
+
+      <h3>Disaster Recovery Plan</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Defina RTO e RPO</strong>
+            <p><strong>RTO</strong> (Recovery Time Objective): quanto tempo pode ficar fora? <strong>RPO</strong> (Recovery Point Objective): quantos dados pode perder?</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Automatize backups</strong>
+            <p>Backup diário no mínimo. Para RPO baixo, use WAL archiving (point-in-time recovery).</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Teste o restore regularmente</strong>
+            <p>Um backup que nunca foi testado é o mesmo que não ter backup. Teste mensalmente.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Procedimento de Recovery</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <strong>Restaurar banco de dados</strong>
+            <p><code>pg_restore</code> ou restore do snapshot cloud. Verificar integridade.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>Iniciar Keycloak</strong>
+            <p>O KC auto-migra o schema se necessário. Não precisa de ação manual.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>Verificar</strong>
+            <p>Health endpoint OK? Admin console acessível? Login de teste funciona? Então está recuperado.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="scenario-card">
+        <div class="sc-header">
+          <span class="sc-icon">🧪</span>
+          <span class="sc-title">Teste de Recovery — Checklist</span>
+        </div>
+        <p>• <code>/health/ready</code> retorna 200</p>
+        <p>• Admin console carrega e mostra realms</p>
+        <p>• Login com usuário de teste funciona</p>
+        <p>• Aplicações conectadas conseguem validar tokens</p>
+        <p>• Sessões ativas foram perdidas (esperado — estavam no cache)</p>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Faça backup do BANCO DE DADOS. Todo o resto é reproduzível. Teste seu restore regularmente — backup não testado é backup inexistente. Defina RTO/RPO e automatize.</p>
+      </div>
+      <nav class="module-nav">
+        <a href="04-monitoramento.html">← Monitoramento</a>
+        <a href="06-upgrade.html">Upgrade de Versão →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .warning-box { background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; }
+    .wb-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .warning-box p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    .steps-list { margin: 20px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+    .step-content p { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0; }
+    .scenario-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+    .sc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .sc-icon { font-size: 1.2rem; }
+    .sc-title { font-weight: 600; font-size: 0.95rem; }
+    .scenario-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

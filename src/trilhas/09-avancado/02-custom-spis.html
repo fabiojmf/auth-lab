@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom SPIs | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">09 — Avançado</a> → <span>Custom SPIs</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Custom SPIs (Service Provider Interfaces)</h2>
+
+      <p>SPIs são os pontos de extensão do Keycloak. Quando as funcionalidades built-in não resolvem seu problema, você pode escrever código Java que roda <strong>dentro</strong> do Keycloak.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🔌</span>
+        <h3>Quando usar SPIs?</h3>
+        <p>Quando o Keycloak não oferece nativamente o que você precisa — e nenhuma configuração ou workaround resolve.</p>
+      </div>
+
+      <h3>Casos de Uso Comuns</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>SPI</th><th>Problema que resolve</th><th>Exemplo</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>User Storage</td><td>Usuários em banco/API legado</td><td>Validar login contra API REST externa</td></tr>
+            <tr><td>Authenticator</td><td>Passo customizado no login</td><td>Verificar IP, validar CPF, 2FA custom</td></tr>
+            <tr><td>Event Listener</td><td>Reagir a eventos do KC</td><td>Enviar login para SIEM/Kafka</td></tr>
+            <tr><td>Protocol Mapper</td><td>Claims customizados no token</td><td>Buscar dados de API e incluir no JWT</td></tr>
+            <tr><td>REST Resource</td><td>Endpoint customizado na API</td><td>Expor dados específicos via REST</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Arquitetura de um SPI</h3>
+
+      <div class="code-block">┌─────────────────────────────────────────┐
+│           Keycloak Runtime              │
+│                                         │
+│  ┌─────────────┐   ┌────────────────┐  │
+│  │  SPI        │   │  Seu Provider  │  │
+│  │  Interface  │◄──│  (implements)  │  │
+│  └─────────────┘   └────────────────┘  │
+│                           ▲             │
+│  ┌─────────────────────────┐            │
+│  │  ProviderFactory        │            │
+│  │  (cria instâncias)      │            │
+│  └─────────────────────────┘            │
+│                                         │
+│  META-INF/services/                     │
+│  └── org.keycloak.storage.              │
+│      UserStorageProviderFactory          │
+└─────────────────────────────────────────┘</div>
+
+      <p>Cada SPI tem 3 componentes:</p>
+      <ul>
+        <li><strong>Provider Interface</strong> — o contrato que você implementa</li>
+        <li><strong>ProviderFactory</strong> — cria instâncias do seu provider</li>
+        <li><strong>META-INF/services/</strong> — arquivo que registra sua factory</li>
+      </ul>
+
+      <h3>User Storage SPI (mais comum)</h3>
+
+      <p>Permite que o Keycloak autentique usuários contra uma fonte externa:</p>
+
+      <div class="code-block">public class MeuStorageProvider implements
+    UserStorageProvider,
+    UserLookupProvider,
+    CredentialInputValidator {
+
+  @Override
+  public UserModel getUserByUsername(RealmModel realm, String username) {
+    // Buscar usuário na sua API/banco
+    ExternalUser ext = minhaApi.findByUsername(username);
+    if (ext == null) return null;
+    return new UserAdapter(session, realm, model, ext);
+  }
+
+  @Override
+  public boolean isValid(RealmModel realm, UserModel user,
+                         CredentialInput input) {
+    // Validar senha contra fonte externa
+    return minhaApi.validatePassword(
+      user.getUsername(), input.getChallengeResponse()
+    );
+  }
+}</div>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>📖 READ_ONLY</h4>
+          <div class="comp-field">Apenas valida credenciais</div>
+          <div class="comp-field">Usuários não podem trocar senha via KC</div>
+          <div class="comp-field">Fonte externa é a verdade</div>
+          <div class="comp-field">Mais simples de implementar</div>
+        </div>
+        <div class="comparison-side">
+          <h4>✏️ WRITABLE</h4>
+          <div class="comp-field">Valida e também cria/atualiza</div>
+          <div class="comp-field">Sincroniza mudanças de volta</div>
+          <div class="comp-field">Implementa <code>UserRegistrationProvider</code></div>
+          <div class="comp-field">Mais complexo e arriscado</div>
+        </div>
+      </div>
+
+      <h3>Deploy de SPIs</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content"><p>Build do JAR: <code>mvn package</code> (ou Gradle)</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content"><p>Copiar para <code>/opt/keycloak/providers/meu-spi.jar</code></p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content"><p>Executar <code>kc.sh build</code> (registra o provider)</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-content"><p>Restart do Keycloak — provider disponível no Admin Console</p></div>
+        </div>
+      </div>
+
+      <h3>Workflow de Desenvolvimento</h3>
+
+      <p>Use <code>start-dev</code> para hot-reload de providers durante desenvolvimento. Para testes automatizados, use <strong>Keycloak Testcontainers</strong>:</p>
+
+      <div class="code-block">@Testcontainers
+class MeuProviderTest {
+  @Container
+  static KeycloakContainer kc = new KeycloakContainer("quay.io/keycloak/keycloak:latest")
+    .withProviderClassesFrom("target/classes");
+}</div>
+
+      <h3>⚠️ Riscos</h3>
+
+      <div class="warning-box">
+        <span class="wb-icon">⚠️</span>
+        <div>
+          <p><strong>SPIs rodam DENTRO da JVM do Keycloak.</strong> Um bug no seu código pode derrubar o servidor inteiro. Um deadlock pode travar todos os logins. Uma exception não tratada pode bloquear autenticação para todos os usuários.</p>
+        </div>
+      </div>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr><th>Risco</th><th>Mitigação</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Crash do servidor</td><td>Try-catch em todo ponto de entrada, fallback graceful</td></tr>
+            <tr><td>Thread safety</td><td>Providers são criados por request — não compartilhe estado mutável</td></tr>
+            <tr><td>Performance</td><td>Timeouts em chamadas externas, circuit breaker</td></tr>
+            <tr><td>Acoplamento de versão</td><td>SPI API muda entre versões — teste a cada upgrade</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>SPIs são poderosos mas arriscados. Rodam dentro do Keycloak — bugs podem derrubar o servidor. Use apenas quando funcionalidades built-in realmente não resolvem o problema. Sempre implemente com tratamento de erros robusto e testes automatizados.</p>
+      </div>
+      <nav class="module-nav">
+        <a href="01-custom-themes.html">← Custom Themes</a>
+        <a href="03-admin-api.html">API Admin →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    .warning-box { background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; }
+    .wb-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .warning-box p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+    .steps-list { margin: 20px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+    .step-content p { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

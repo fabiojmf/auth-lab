@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trilha 8 — Operação em Produção | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <span>08 — Operação em Produção</span>
+    </nav>
+
+    <section class="hero">
+      <h2>Operação em Produção</h2>
+      <p>Keycloak em produção não é só 'docker compose up'. Aprenda a operar com alta disponibilidade, segurança e observabilidade.</p>
+    </section>
+
+    <section class="modules" id="main-content">
+      <a href="01-arquitetura-deploy.html" class="card module-card">
+        <div class="module-number">1</div>
+        <div class="module-info">
+          <h3>Arquitetura e Deploy</h3>
+          <p>Modos de deploy, configuração de banco, container e as opções essenciais para produção.</p>
+        </div>
+      </a>
+
+      <a href="02-alta-disponibilidade.html" class="card module-card">
+        <div class="module-number">2</div>
+        <div class="module-info">
+          <h3>Alta Disponibilidade (Clustering)</h3>
+          <p>Como o Keycloak forma cluster, cache distribuído, Kubernetes e load balancer.</p>
+        </div>
+      </a>
+
+      <a href="03-proxy-reverso-tls.html" class="card module-card">
+        <div class="module-number">3</div>
+        <div class="module-info">
+          <h3>Proxy Reverso e TLS</h3>
+          <p>NGINX, hostname, proxy-headers e os problemas clássicos de TLS termination.</p>
+        </div>
+      </a>
+
+      <a href="04-monitoramento.html" class="card module-card">
+        <div class="module-number">4</div>
+        <div class="module-info">
+          <h3>Monitoramento e Métricas</h3>
+          <p>Health checks, Prometheus, logging estruturado e alertas para não ser pego de surpresa.</p>
+        </div>
+      </a>
+
+      <a href="05-backup-recovery.html" class="card module-card">
+        <div class="module-number">5</div>
+        <div class="module-info">
+          <h3>Backup e Recovery</h3>
+          <p>O que fazer backup, estratégias de restore e plano de disaster recovery.</p>
+        </div>
+      </a>
+
+      <a href="06-upgrade.html" class="card module-card">
+        <div class="module-number">6</div>
+        <div class="module-info">
+          <h3>Upgrade de Versão</h3>
+          <p>Procedimento seguro de upgrade, rolling updates e migração WildFly → Quarkus.</p>
+        </div>
+      </a>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wizard: Que client eu preciso? | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">04 — Clients na Prática</a> → <span>Wizard: Que client eu preciso?</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Wizard: Que client eu preciso?</h2>
+
+      <p>Responda as perguntas sobre o seu cenário e receba a <strong>configuração completa</strong> do client no Keycloak.</p>
+
+      <div class="interactive-box quiz-box">
+        <div id="wizardContent">
+          <div class="wizard-question" id="wizardQuestion"></div>
+          <div class="wizard-options" id="wizardOptions"></div>
+          <div class="wizard-breadcrumb" id="wizardBreadcrumb"></div>
+        </div>
+        <div class="wizard-result" id="wizardResult" style="display:none;">
+          <div class="wr-icon" id="wrIcon"></div>
+          <h3 id="wrTitle"></h3>
+          <p id="wrDesc"></p>
+          <div class="wr-config" id="wrConfig"></div>
+          <button class="btn" onclick="resetWizard()" style="margin-top: 20px;">Tentar outro cenário</button>
+        </div>
+      </div>
+
+      <h3>Tabela resumo de configurações</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Cenário</th>
+              <th>Client auth</th>
+              <th>Standard Flow</th>
+              <th>Direct Grant</th>
+              <th>Service Acc.</th>
+              <th>Redirect URIs</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Backend web (Spring Boot, Node)</td>
+              <td>✅ On</td>
+              <td>✅ On</td>
+              <td>❌ Off</td>
+              <td>❌ Off</td>
+              <td>✅ Sim</td>
+            </tr>
+            <tr>
+              <td>Backend + chama APIs próprias</td>
+              <td>✅ On</td>
+              <td>✅ On</td>
+              <td>❌ Off</td>
+              <td>✅ On</td>
+              <td>✅ Sim</td>
+            </tr>
+            <tr>
+              <td>SPA (React, Angular, Vue)</td>
+              <td>❌ Off</td>
+              <td>✅ On</td>
+              <td>❌ Off</td>
+              <td>❌ Off</td>
+              <td>✅ Sim</td>
+            </tr>
+            <tr>
+              <td>Mobile (iOS, Android)</td>
+              <td>❌ Off</td>
+              <td>✅ On</td>
+              <td>❌ Off</td>
+              <td>❌ Off</td>
+              <td>✅ Sim (deep link)</td>
+            </tr>
+            <tr>
+              <td>Microserviço (machine-to-machine)</td>
+              <td>✅ On</td>
+              <td>❌ Off</td>
+              <td>❌ Off</td>
+              <td>✅ On</td>
+              <td>❌ Não</td>
+            </tr>
+            <tr>
+              <td>CLI / ferramenta de dev</td>
+              <td>✅ On</td>
+              <td>❌ Off</td>
+              <td>✅ On</td>
+              <td>❌ Off</td>
+              <td>❌ Não</td>
+            </tr>
+            <tr>
+              <td colspan="6" style="font-size: 0.78rem; color: var(--text-secondary); padding: 4px 8px;">⚠️ CLIs modernos preferem Authorization Code + PKCE com redirect para localhost (como az login, gcloud auth login). Direct Grant é legado.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Regras de ouro</h4>
+        <p><strong>Tem humano + tem backend</strong> → Confidential + Standard Flow<br>
+        <strong>Tem humano + sem backend</strong> → Public + Standard Flow + PKCE<br>
+        <strong>Sem humano</strong> → Confidential + Service Account<br>
+        <strong>Backend que também chama APIs</strong> → Standard Flow + Service Account (ambos)<br>
+        <strong>Na dúvida sobre Direct Grant:</strong> não habilite. Use Authorization Code.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="04-service-accounts.html">← Módulo anterior</a>
+        <a href="06-troubleshooting.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    const wizardNodes = {
+      q1: {
+        question: 'Tem um usuário humano fazendo login?',
+        options: [
+          { text: '👤 Sim, um humano precisa se autenticar', next: 'q2' },
+          { text: '🤖 Não, é máquina falando com máquina', next: 'r_service' }
+        ]
+      },
+      q2: {
+        question: 'A aplicação tem um backend (servidor)?',
+        options: [
+          { text: '💻 Sim, tem backend (Spring Boot, Node, Django, etc.)', next: 'q3' },
+          { text: '🌐 Não, é SPA rodando no browser', next: 'r_spa' },
+          { text: '📱 Não, é app mobile (iOS/Android)', next: 'r_mobile' }
+        ]
+      },
+      q3: {
+        question: 'O backend também precisa chamar APIs externas com identidade própria (sem usuário)?',
+        options: [
+          { text: '✅ Sim, precisa agir como ele mesmo em algumas chamadas', next: 'r_backend_sa' },
+          { text: '❌ Não, só precisa do login do usuário', next: 'r_backend' }
+        ]
+      },
+      r_backend: {
+        type: 'result',
+        icon: '☕',
+        title: 'Backend Web — Confidential',
+        desc: 'Client confidential com Authorization Code Flow. O secret fica seguro no servidor.',
+        config: `
+          <div class="cfg-row"><span class="cfg-label">Client authentication:</span><span class="cfg-value on">On</span></div>
+          <div class="cfg-row"><span class="cfg-label">Standard Flow:</span><span class="cfg-value on">On</span></div>
+          <div class="cfg-row"><span class="cfg-label">Direct Access Grants:</span><span class="cfg-value off">Off</span></div>
+          <div class="cfg-row"><span class="cfg-label">Service accounts:</span><span class="cfg-value off">Off</span></div>
+          <div class="cfg-row"><span class="cfg-label">Root URL:</span><span class="cfg-value">https://sua-app.com</span></div>
+          <div class="cfg-row"><span class="cfg-label">Valid Redirect URIs:</span><span class="cfg-value">https://sua-app.com/callback</span></div>
+          <div class="cfg-row"><span class="cfg-label">Web Origins:</span><span class="cfg-value">+ (ou não necessário se backend-only)</span></div>
+        `
+      },
+      r_backend_sa: {
+        type: 'result',
+        icon: '☕🤖',
+        title: 'Backend Web + Service Account',
+        desc: 'Login de usuário E identidade própria. Habilite Standard Flow e Service Account no mesmo client.',
+        config: `
+          <div class="cfg-row"><span class="cfg-label">Client authentication:</span><span class="cfg-value on">On</span></div>
+          <div class="cfg-row"><span class="cfg-label">Standard Flow:</span><span class="cfg-value on">On</span></div>
+          <div class="cfg-row"><span class="cfg-label">Direct Access Grants:</span><span class="cfg-value off">Off</span></div>
+          <div class="cfg-row"><span class="cfg-label">Service accounts:</span><span class="cfg-value on">On</span></div>
+          <div class="cfg-row"><span class="cfg-label">Root URL:</span><span class="cfg-value">https://sua-app.com</span></div>
+          <div class="cfg-row"><span class="cfg-label">Valid Redirect URIs:</span><span class="cfg-value">https://sua-app.com/callback</span></div>
+          <div class="cfg-row"><span class="cfg-label">Web Origins:</span><span class="cfg-value">+</span></div>
+          <div class="cfg-row"><span class="cfg-label">Service Account Roles:</span><span class="cfg-value">Atribuir roles necessárias</span></div>
+        `
+      },
+      r_spa: {
+        type: 'result',
+        icon: '⚛️',
+        title: 'SPA — Public + PKCE',
+        desc: 'Client public com Authorization Code + PKCE. Sem secret, o PKCE protege a troca de tokens.',
+        config: `
+          <div class="cfg-row"><span class="cfg-label">Client authentication:</span><span class="cfg-value off">Off</span></div>
+          <div class="cfg-row"><span class="cfg-label">Standard Flow:</span><span class="cfg-value on">On</span></div>
+          <div class="cfg-row"><span class="cfg-label">Direct Access Grants:</span><span class="cfg-value off">Off</span></div>
+          <div class="cfg-row"><span class="cfg-label">Service accounts:</span><span class="cfg-value off">Off (não disponível)</span></div>
+          <div class="cfg-row"><span class="cfg-label">Root URL:</span><span class="cfg-value">http://localhost:3000 (dev) / https://app.com (prod)</span></div>
+          <div class="cfg-row"><span class="cfg-label">Valid Redirect URIs:</span><span class="cfg-value">http://localhost:3000/* (dev)</span></div>
+          <div class="cfg-row"><span class="cfg-label">Web Origins:</span><span class="cfg-value">+ (obrigatório para CORS)</span></div>
+        `
+      },
+      r_mobile: {
+        type: 'result',
+        icon: '📱',
+        title: 'Mobile — Public + PKCE',
+        desc: 'Client public com PKCE. O login abre o browser do sistema (Custom Tab / ASWebAuthenticationSession).',
+        config: `
+          <div class="cfg-row"><span class="cfg-label">Client authentication:</span><span class="cfg-value off">Off</span></div>
+          <div class="cfg-row"><span class="cfg-label">Standard Flow:</span><span class="cfg-value on">On</span></div>
+          <div class="cfg-row"><span class="cfg-label">Direct Access Grants:</span><span class="cfg-value off">Off</span></div>
+          <div class="cfg-row"><span class="cfg-label">Service accounts:</span><span class="cfg-value off">Off (não disponível)</span></div>
+          <div class="cfg-row"><span class="cfg-label">Root URL:</span><span class="cfg-value">(vazio)</span></div>
+          <div class="cfg-row"><span class="cfg-label">Valid Redirect URIs:</span><span class="cfg-value">myapp://callback (deep link scheme)</span></div>
+          <div class="cfg-row"><span class="cfg-label">Web Origins:</span><span class="cfg-value">(não necessário — não há browser CORS)</span></div>
+        `
+      },
+      r_service: {
+        type: 'result',
+        icon: '🤖',
+        title: 'Microserviço — Service Account',
+        desc: 'Sem humano, sem redirect. O client se autentica como ele mesmo via client_credentials.',
+        config: `
+          <div class="cfg-row"><span class="cfg-label">Client authentication:</span><span class="cfg-value on">On</span></div>
+          <div class="cfg-row"><span class="cfg-label">Standard Flow:</span><span class="cfg-value off">Off</span></div>
+          <div class="cfg-row"><span class="cfg-label">Direct Access Grants:</span><span class="cfg-value off">Off</span></div>
+          <div class="cfg-row"><span class="cfg-label">Service accounts:</span><span class="cfg-value on">On</span></div>
+          <div class="cfg-row"><span class="cfg-label">Root URL:</span><span class="cfg-value">(não necessário)</span></div>
+          <div class="cfg-row"><span class="cfg-label">Valid Redirect URIs:</span><span class="cfg-value">(não necessário)</span></div>
+          <div class="cfg-row"><span class="cfg-label">Web Origins:</span><span class="cfg-value">(não necessário)</span></div>
+          <div class="cfg-row"><span class="cfg-label">Service Account Roles:</span><span class="cfg-value">Atribuir roles necessárias</span></div>
+        `
+      }
+    };
+
+    let wizardHistory = [];
+    let currentWizardNode = 'q1';
+
+    function renderWizard() {
+      const node = wizardNodes[currentWizardNode];
+      if (node.type === 'result') {
+        document.getElementById('wizardContent').style.display = 'none';
+        document.getElementById('wizardResult').style.display = 'block';
+        document.getElementById('wrIcon').textContent = node.icon;
+        document.getElementById('wrTitle').textContent = node.title;
+        document.getElementById('wrDesc').textContent = node.desc;
+        document.getElementById('wrConfig').innerHTML = node.config;
+      } else {
+        document.getElementById('wizardContent').style.display = 'block';
+        document.getElementById('wizardResult').style.display = 'none';
+        document.getElementById('wizardQuestion').innerHTML = `<h3>${node.question}</h3>`;
+        document.getElementById('wizardOptions').innerHTML = node.options.map(opt =>
+          `<button class="wizard-option" onclick="selectWizard('${opt.next}')">${opt.text}</button>`
+        ).join('');
+        document.getElementById('wizardBreadcrumb').innerHTML = wizardHistory.length > 0
+          ? `<button class="wizard-back" onclick="goBack()">← Voltar</button>`
+          : '';
+      }
+    }
+
+    function selectWizard(next) {
+      wizardHistory.push(currentWizardNode);
+      currentWizardNode = next;
+      renderWizard();
+    }
+
+    function goBack() {
+      if (wizardHistory.length > 0) {
+        currentWizardNode = wizardHistory.pop();
+        renderWizard();
+      }
+    }
+
+    function resetWizard() {
+      wizardHistory = [];
+      currentWizardNode = 'q1';
+      renderWizard();
+    }
+
+    document.addEventListener('DOMContentLoaded', renderWizard);
+  </script>
+  <style>
+    .quiz-box { padding: 32px; min-height: 220px; }
+    .wizard-question h3 { font-size: 1.1rem; margin-bottom: 20px; text-align: center; font-family: var(--font-display); }
+    .wizard-options { display: flex; flex-direction: column; gap: 12px; max-width: 520px; margin: 0 auto; }
+    .wizard-option { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; font-size: 0.9rem; cursor: pointer; text-align: left; transition: all var(--transition); color: var(--text-primary); width: 100%; font-family: inherit; }
+    .wizard-option:hover { border-color: var(--accent); background: rgba(41, 151, 255, 0.05); }
+    .wizard-breadcrumb { text-align: center; margin-top: 20px; }
+    .wizard-back { background: none; border: none; color: var(--text-secondary); font-size: 0.8rem; cursor: pointer; font-family: inherit; }
+    .wizard-back:hover { color: var(--accent); }
+
+    .wizard-result { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .wr-icon { font-size: 3rem; }
+    .wizard-result h3 { font-size: 1.3rem; font-family: var(--font-display); }
+    .wizard-result p { color: var(--text-secondary); font-size: 0.9rem; }
+    .wr-config { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; text-align: left; max-width: 500px; width: 100%; }
+    .cfg-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+    .cfg-row:last-child { border-bottom: none; }
+    .cfg-label { color: var(--text-secondary); font-weight: 500; }
+    .cfg-value { color: var(--text-primary); font-family: var(--mono); font-size: 0.75rem; }
+    .cfg-value.on { color: #27ae60; font-weight: 600; }
+    .cfg-value.off { color: #e74c3c; }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    .info-table thead, .info-table tbody, .info-table tr { display: table; width: 100%; table-layout: fixed; }
+    .info-table th { text-align: left; padding: 10px 8px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 8px; border-bottom: 1px solid var(--border); color: var(--text-secondary); word-wrap: break-word; }
+    .info-table tr:last-child td { border-bottom: none; }
+
+    h3 { font-family: var(--font-display); }
+
+    @media (max-width: 640px) {
+      .wizard-option { font-size: 0.85rem; padding: 12px 16px; }
+      .info-table { font-size: 0.7rem; display: block; overflow-x: auto; }
+      .info-table thead, .info-table tbody, .info-table tr { display: table; width: 100%; }
+      .cfg-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+    }
+  </style>
+</body>
+</html>

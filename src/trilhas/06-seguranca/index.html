@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trilha 6 — Segurança e Políticas | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <span>06 — Segurança e Políticas</span>
+    </nav>
+
+    <section class="hero">
+      <h2>Segurança e Políticas</h2>
+      <p>Proteger o SSO é proteger todos os sistemas conectados. Entenda as defesas que o Keycloak oferece e como configurá-las.</p>
+    </section>
+
+    <section class="modules" id="main-content">
+      <a href="01-brute-force.html" class="card module-card">
+        <div class="module-number">1</div>
+        <div class="module-info">
+          <h3>Brute Force Protection</h3>
+          <p>Como o Keycloak detecta e bloqueia tentativas de login por força bruta. Configuração e desbloqueio.</p>
+        </div>
+      </a>
+
+      <a href="02-rotacao-chaves.html" class="card module-card">
+        <div class="module-number">2</div>
+        <div class="module-info">
+          <h3>Rotação de Chaves</h3>
+          <p>O que são as chaves do realm, por que rotacionar, o que acontece com tokens existentes.</p>
+        </div>
+      </a>
+
+      <a href="03-cors.html" class="card module-card">
+        <div class="module-number">3</div>
+        <div class="module-info">
+          <h3>CORS e Web Origins</h3>
+          <p>Por que o browser bloqueia requests ao Keycloak e como configurar corretamente.</p>
+        </div>
+      </a>
+
+      <a href="04-sessoes.html" class="card module-card">
+        <div class="module-number">4</div>
+        <div class="module-info">
+          <h3>Gerenciamento de Sessões</h3>
+          <p>SSO sessions, timeouts, idle time, logout e revogação. O ciclo de vida completo.</p>
+        </div>
+      </a>
+
+      <a href="05-auditoria.html" class="card module-card">
+        <div class="module-number">5</div>
+        <div class="module-info">
+          <h3>Auditoria e Eventos</h3>
+          <p>Login events, admin events. Como monitorar quem fez o quê e quando.</p>
+        </div>
+      </a>
+    </section>
+  </div>
+</body>
+</html>

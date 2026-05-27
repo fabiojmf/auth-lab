@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuração do Realm | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">02 — Instalação e Arquitetura</a> → <span>Configuração do Realm</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Configuração do Realm</h2>
+
+      <p>As configurações do realm afetam segurança, experiência do usuário e capacidade de debug. Acerte desde o início.</p>
+
+      <h3>Explorador de configurações</h3>
+
+      <p>Clique em cada categoria para expandir:</p>
+
+      <div class="interactive-box">
+        <div class="config-explorer">
+          <div class="config-category" onclick="toggleConfig(this)">
+            <div class="config-header">
+              <span>🔐 Login</span>
+              <span class="config-toggle">+</span>
+            </div>
+            <div class="config-body">
+              <table class="config-table">
+                <tr><td>User registration</td><td>Permitir auto-registro?</td><td class="rec">OFF para apps internas</td></tr>
+                <tr><td>Forgot password</td><td>Habilitar reset de senha?</td><td class="rec">ON</td></tr>
+                <tr><td>Remember me</td><td>Checkbox "lembrar-me"?</td><td class="rec">ON</td></tr>
+                <tr><td>Login with email</td><td>Email como username?</td><td class="rec">ON</td></tr>
+                <tr><td>Verify email</td><td>Exigir verificação?</td><td class="rec">ON em produção</td></tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="config-category" onclick="toggleConfig(this)">
+            <div class="config-header">
+              <span>🎫 Tokens</span>
+              <span class="config-toggle">+</span>
+            </div>
+            <div class="config-body">
+              <table class="config-table">
+                <tr><td>Access Token Lifespan</td><td>Tempo de vida do access token</td><td class="rec">5 min (default)</td></tr>
+                <tr><td>SSO Session Idle</td><td>Timeout por inatividade</td><td class="rec">30 min</td></tr>
+                <tr><td>SSO Session Max</td><td>Duração máxima da sessão</td><td class="rec">10 horas</td></tr>
+                <tr><td>Revoke Refresh Token</td><td>Rotação de refresh token?</td><td class="rec">ON (mais seguro)</td></tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="config-category" onclick="toggleConfig(this)">
+            <div class="config-header">
+              <span>⏱️ Sessions</span>
+              <span class="config-toggle">+</span>
+            </div>
+            <div class="config-body">
+              <table class="config-table">
+                <tr><td>SSO Session Idle</td><td>Inatividade antes de expirar</td><td class="rec">30 min</td></tr>
+                <tr><td>SSO Session Max</td><td>Máximo absoluto</td><td class="rec">10 horas</td></tr>
+                <tr><td>Client Session Idle</td><td>Sessão do client específico</td><td class="rec">Herda do SSO</td></tr>
+                <tr><td>Offline Session Idle</td><td>Para refresh tokens offline</td><td class="rec">30 dias</td></tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="config-category" onclick="toggleConfig(this)">
+            <div class="config-header">
+              <span>🛡️ Security Defenses</span>
+              <span class="config-toggle">+</span>
+            </div>
+            <div class="config-body">
+              <table class="config-table">
+                <tr><td>Brute Force Detection</td><td>Bloquear após N tentativas</td><td class="rec">ON — 5 tentativas (default: OFF, 30)</td></tr>
+                <tr><td>Permanent Lockout</td><td>Bloquear permanentemente?</td><td class="rec">OFF (usar tempo)</td></tr>
+                <tr><td>Wait Increment</td><td>Tempo entre tentativas</td><td class="rec">60 segundos</td></tr>
+                <tr><td>X-Frame-Options</td><td>Proteção contra clickjacking</td><td class="rec">SAMEORIGIN</td></tr>
+                <tr><td>Content-Security-Policy</td><td>CSP header</td><td class="rec">frame-src 'self'</td></tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="config-category" onclick="toggleConfig(this)">
+            <div class="config-header">
+              <span>🎨 Themes</span>
+              <span class="config-toggle">+</span>
+            </div>
+            <div class="config-body">
+              <table class="config-table">
+                <tr><td>Login Theme</td><td>Tela de login que o usuário vê</td><td class="rec">keycloak (default)</td></tr>
+                <tr><td>Account Theme</td><td>Self-service do usuário</td><td class="rec">keycloak.v2</td></tr>
+                <tr><td>Admin Theme</td><td>O console de admin</td><td class="rec">keycloak</td></tr>
+                <tr><td>Email Theme</td><td>Templates de email</td><td class="rec">keycloak</td></tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="config-category" onclick="toggleConfig(this)">
+            <div class="config-header">
+              <span>📊 Events</span>
+              <span class="config-toggle">+</span>
+            </div>
+            <div class="config-body">
+              <table class="config-table">
+                <tr><td>Save Events</td><td>Salvar login events?</td><td class="rec">ON (sempre!)</td></tr>
+                <tr><td>Expiration</td><td>Quanto tempo manter</td><td class="rec">30 dias mínimo</td></tr>
+                <tr><td>Admin Events</td><td>Salvar ações de admin?</td><td class="rec">ON em produção</td></tr>
+                <tr><td>Include Representation</td><td>Salvar payload completo?</td><td class="rec">ON (debug)</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Erros comuns</h3>
+
+      <div class="interactive-box">
+        <div class="mistakes-grid">
+          <div class="mistake-card danger">
+            <h4>🚨 Access Token muito longo</h4>
+            <p>Token de 1 hora = se vazar, o atacante tem 1 hora de acesso. Mantenha em 5 minutos.</p>
+          </div>
+          <div class="mistake-card warning">
+            <h4>⚠️ SSO Session muito curta</h4>
+            <p>Sessão de 5 min = usuários reclamam de re-login constante. 30 min idle é um bom equilíbrio.</p>
+          </div>
+          <div class="mistake-card danger">
+            <h4>🚨 Events desabilitados</h4>
+            <p>Sem events = cego quando precisa investigar. Sempre habilite. O custo de storage é mínimo.</p>
+          </div>
+          <div class="mistake-card danger">
+            <h4>🚨 Brute force desabilitado</h4>
+            <p>Sem proteção = atacante pode testar milhares de senhas. Habilite com 5 tentativas + lockout temporário.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Valores recomendados para começar</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr><th>Configuração</th><th>Valor</th><th>Por quê</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Access Token Lifespan</td><td><strong>5 min</strong></td><td>Curto = menos risco se vazar</td></tr>
+            <tr><td>SSO Session Idle</td><td><strong>30 min</strong></td><td>Equilíbrio UX vs segurança</td></tr>
+            <tr><td>SSO Session Max</td><td><strong>10 horas</strong></td><td>Um dia de trabalho</td></tr>
+            <tr><td>Revoke Refresh Token</td><td><strong>ON</strong></td><td>Cada uso gera novo token</td></tr>
+            <tr><td>Brute Force</td><td><strong>ON, 5 tentativas</strong></td><td>Proteção básica essencial</td></tr>
+            <tr><td>Save Events</td><td><strong>ON, 30 dias</strong></td><td>Auditoria e debug</td></tr>
+            <tr><td>Verify Email</td><td><strong>ON</strong></td><td>Garante emails válidos</td></tr>
+            <tr><td>Forgot Password</td><td><strong>ON</strong></td><td>Self-service reduz tickets</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Segurança vs Experiência</h3>
+
+      <div class="interactive-box">
+        <div class="slider-demo">
+          <p style="text-align: center; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">Mova o slider para ver o impacto:</p>
+          <div class="slider-container">
+            <span class="slider-label">🔓 Mais UX</span>
+            <input type="range" min="1" max="5" value="3" class="security-slider" id="secSlider" oninput="updateSlider()">
+            <span class="slider-label">🔒 Mais Segurança</span>
+          </div>
+          <div class="slider-result" id="sliderResult">
+            <p><strong>Equilibrado</strong> — Access Token: 5min | Session: 30min idle | Brute force: ON</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>Acerte essas configurações desde o início. Elas afetam segurança, experiência do usuário e sua capacidade de investigar problemas. Tokens curtos, events ligados, brute force ativo.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="04-estrutura-completa.html">← Módulo anterior</a>
+        <a href="index.html">Voltar à Trilha 2 →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    function toggleConfig(el) { el.classList.toggle('open'); }
+
+    function updateSlider() {
+      const val = document.getElementById('secSlider').value;
+      const configs = {
+        1: '<strong>Máxima conveniência</strong> — Access Token: 30min | Session: 24h | Brute force: OFF<br><span style="color:#e74c3c">⚠️ Inseguro para produção</span>',
+        2: '<strong>Relaxado</strong> — Access Token: 15min | Session: 2h idle | Brute force: 10 tentativas<br><span style="color:#f39c12">Apps internas de baixo risco</span>',
+        3: '<strong>Equilibrado</strong> — Access Token: 5min | Session: 30min idle | Brute force: 5 tentativas<br><span style="color:#2ecc71">✓ Recomendado para a maioria</span>',
+        4: '<strong>Restritivo</strong> — Access Token: 2min | Session: 15min idle | Brute force: 3 tentativas + MFA<br><span style="color:#3498db">Apps financeiras, dados sensíveis</span>',
+        5: '<strong>Máxima segurança</strong> — Access Token: 1min | Session: 5min idle | MFA obrigatório + IP whitelist<br><span style="color:#9b59b6">Infraestrutura crítica, compliance</span>'
+      };
+      document.getElementById('sliderResult').innerHTML = `<p>${configs[val]}</p>`;
+    }
+  </script>
+  <style>
+    .config-explorer { display: flex; flex-direction: column; gap: 8px; }
+    .config-category { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: all 0.2s; }
+    .config-category:hover { border-color: var(--accent); }
+    .config-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; font-weight: 500; font-size: 0.95rem; }
+    .config-toggle { font-weight: 700; font-size: 1.2rem; transition: transform 0.2s; color: var(--accent); }
+    .config-body { display: none; padding: 0 16px 16px; }
+    .config-category.open .config-body { display: block; }
+    .config-category.open .config-toggle { transform: rotate(45deg); }
+    .config-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .config-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .config-table td:first-child { font-weight: 500; color: var(--text-primary); white-space: nowrap; }
+    .config-table td.rec { color: var(--accent); font-weight: 500; font-size: 0.75rem; }
+    .config-table tr:last-child td { border-bottom: none; }
+
+    .mistakes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .mistake-card { background: var(--bg-card); border-radius: var(--radius); padding: 16px; border-left: 4px solid var(--border); }
+    .mistake-card.danger { border-left-color: #e74c3c; }
+    .mistake-card.warning { border-left-color: #f39c12; }
+    .mistake-card h4 { font-family: var(--font-display); font-size: 0.85rem; margin-bottom: 6px; }
+    .mistake-card p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+
+    .slider-demo { padding: 8px 0; }
+    .slider-container { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .slider-label { font-size: 0.75rem; color: var(--text-secondary); white-space: nowrap; }
+    .security-slider { flex: 1; accent-color: var(--accent); height: 6px; }
+    .slider-result { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+    .slider-result p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; line-height: 1.5; }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .info-table tr:last-child td { border-bottom: none; }
+
+    @media (max-width: 640px) {
+      .mistakes-grid { grid-template-columns: 1fr; }
+      .config-table td:first-child { white-space: normal; }
+      .slider-container { flex-direction: column; gap: 8px; }
+      .info-table { font-size: 0.7rem; }
+    }
+  </style>
+</body>
+</html>

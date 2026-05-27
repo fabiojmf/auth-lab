@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quando usar cada fluxo | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">03 — Fluxos OAuth2/OIDC</a> → <span>Quando usar cada fluxo</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Quando usar cada fluxo</h2>
+
+      <p>Responda as perguntas abaixo e descubra qual fluxo OAuth2 é o correto para o seu cenário:</p>
+
+      <div class="interactive-box quiz-box">
+        <div id="quizContent">
+          <div class="quiz-question" id="quizQuestion"></div>
+          <div class="quiz-options" id="quizOptions"></div>
+        </div>
+        <div class="quiz-result" id="quizResult" style="display:none;">
+          <div class="result-icon" id="resultIcon"></div>
+          <h3 id="resultTitle"></h3>
+          <p id="resultDesc"></p>
+          <div class="result-config" id="resultConfig"></div>
+          <button class="btn" onclick="resetQuiz()" style="margin-top: 20px;">Tentar outro cenário</button>
+        </div>
+      </div>
+
+      <h3>Resumo rápido</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Cenário</th>
+              <th>Fluxo</th>
+              <th>No Keycloak</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>App web com login de usuário</td>
+              <td>Authorization Code</td>
+              <td>Standard Flow = Sim</td>
+            </tr>
+            <tr>
+              <td>SPA (React/Angular) com login</td>
+              <td>Authorization Code + PKCE</td>
+              <td>Client public + Standard Flow</td>
+            </tr>
+            <tr>
+              <td>Backend chamando API (sem usuário)</td>
+              <td>Client Credentials</td>
+              <td>Service Account = Sim</td>
+            </tr>
+            <tr>
+              <td>CLI / ferramenta de dev</td>
+              <td>Direct Grant</td>
+              <td>Direct Grant = Sim</td>
+            </tr>
+            <tr>
+              <td>Sistema legado com tela própria</td>
+              <td>Direct Grant</td>
+              <td>Direct Grant = Sim</td>
+            </tr>
+            <tr>
+              <td>Renovar acesso sem novo login</td>
+              <td>Refresh Token</td>
+              <td>(automático com os outros fluxos)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Regra de ouro</h4>
+        <p><strong>Tem humano logando?</strong> → Authorization Code (com PKCE se não tem backend)<br>
+        <strong>Só máquina?</strong> → Client Credentials<br>
+        <strong>Não pode fazer redirect?</strong> → Direct Grant (último recurso)</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="04-refresh-token.html">← Módulo anterior</a>
+        <a href="index.html">Concluir Trilha 3 ✓</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    const quizTree = {
+      id: 'q1',
+      question: 'Tem um usuário humano fazendo login?',
+      options: [
+        { text: 'Sim, um humano precisa se autenticar', next: 'q2' },
+        { text: 'Não, é máquina falando com máquina', next: 'r_client_credentials' }
+      ]
+    };
+
+    const nodes = {
+      q1: quizTree,
+      q2: {
+        id: 'q2',
+        question: 'A aplicação pode fazer redirect (abrir o browser para o Keycloak)?',
+        options: [
+          { text: 'Sim, pode redirecionar', next: 'q3' },
+          { text: 'Não, é uma CLI ou sistema sem browser', next: 'r_direct_grant' }
+        ]
+      },
+      q3: {
+        id: 'q3',
+        question: 'A aplicação tem um backend que pode guardar um secret?',
+        options: [
+          { text: 'Sim, tem backend (Spring Boot, Node.js, etc.)', next: 'r_auth_code' },
+          { text: 'Não, é uma SPA rodando no browser', next: 'r_auth_code_pkce' },
+          { text: 'Não, é um app mobile (iOS/Android)', next: 'r_auth_code_pkce_mobile' }
+        ]
+      },
+      r_auth_code: {
+        type: 'result',
+        icon: '✅',
+        title: 'Authorization Code Flow',
+        desc: 'O fluxo padrão e mais seguro. O backend troca o code por token usando o client_secret.',
+        config: '<strong>No Keycloak:</strong><br>• Client authentication: On (confidential)<br>• Fluxo padrão habilitado: Sim<br>• Redirect URIs: configuradas'
+      },
+      r_auth_code_pkce: {
+        type: 'result',
+        icon: '✅',
+        title: 'Authorization Code Flow + PKCE',
+        desc: 'Mesmo fluxo, mas sem secret. O PKCE protege a troca do code por token. O token fica no browser.',
+        config: '<strong>No Keycloak:</strong><br>• Client authentication: Off (public)<br>• Fluxo padrão habilitado: Sim<br>• Redirect URIs: configuradas'
+      },
+      r_auth_code_pkce_mobile: {
+        type: 'result',
+        icon: '📱',
+        title: 'Authorization Code Flow + PKCE (Mobile)',
+        desc: 'Mesmo fluxo do SPA. O app abre o browser do sistema (Custom Tab / ASWebAuthenticationSession) para o login, recebe o code via deep link, e troca por token com PKCE.',
+        config: '<strong>No Keycloak:</strong><br>• Client authentication: Off (public)<br>• Fluxo padrão habilitado: Sim<br>• Redirect URIs: scheme do app (ex: myapp://callback)'
+      },
+      r_client_credentials: {
+        type: 'result',
+        icon: '🤖',
+        title: 'Client Credentials',
+        desc: 'Sem usuário, sem browser. O client se autentica como ele mesmo.',
+        config: '<strong>No Keycloak:</strong><br>• Client authentication: On (confidential)<br>• Contas de serviço habilitadas: Sim<br>• Fluxo padrão: Não<br>• Sem redirect URIs'
+      },
+      r_direct_grant: {
+        type: 'result',
+        icon: '⚠️',
+        title: 'Direct Grant (Resource Owner Password)',
+        desc: 'A aplicação recebe a senha do usuário. Use apenas se não há alternativa.',
+        config: '<strong>No Keycloak:</strong><br>• Client authentication: On (confidential)<br>• Grants de Acesso direto habilitado: Sim'
+      }
+    };
+
+    let currentNode = 'q1';
+
+    function renderQuiz() {
+      const node = nodes[currentNode];
+      if (node.type === 'result') {
+        document.getElementById('quizContent').style.display = 'none';
+        document.getElementById('quizResult').style.display = 'block';
+        document.getElementById('resultIcon').textContent = node.icon;
+        document.getElementById('resultTitle').textContent = node.title;
+        document.getElementById('resultDesc').textContent = node.desc;
+        document.getElementById('resultConfig').innerHTML = node.config;
+      } else {
+        document.getElementById('quizContent').style.display = 'block';
+        document.getElementById('quizResult').style.display = 'none';
+        document.getElementById('quizQuestion').innerHTML = `<h3>${node.question}</h3>`;
+        document.getElementById('quizOptions').innerHTML = node.options.map(opt =>
+          `<button class="quiz-option" onclick="selectOption('${opt.next}')">${opt.text}</button>`
+        ).join('');
+      }
+    }
+
+    function selectOption(next) {
+      currentNode = next;
+      renderQuiz();
+    }
+
+    function resetQuiz() {
+      currentNode = 'q1';
+      renderQuiz();
+    }
+
+    document.addEventListener('DOMContentLoaded', renderQuiz);
+  </script>
+  <style>
+    .quiz-box { padding: 32px; min-height: 200px; }
+    .quiz-question h3 { font-size: 1.1rem; margin-bottom: 20px; text-align: center; }
+    .quiz-options { display: flex; flex-direction: column; gap: 12px; max-width: 500px; margin: 0 auto; }
+    .quiz-option { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; font-size: 0.9rem; cursor: pointer; text-align: left; transition: all var(--transition); color: var(--text-primary); width: 100%; font-family: inherit; }
+    .quiz-option:hover { border-color: var(--accent); background: rgba(41, 151, 255, 0.05); }
+
+    .quiz-result { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .result-icon { font-size: 3rem; }
+    .quiz-result h3 { font-size: 1.3rem; }
+    .quiz-result p { color: var(--text-secondary); }
+    .result-config { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-size: 0.85rem; color: var(--text-secondary); text-align: left; max-width: 400px; margin: 0 auto; }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; overflow-x: auto; display: block; }
+    .info-table thead, .info-table tbody, .info-table tr { display: table; width: 100%; table-layout: fixed; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); word-wrap: break-word; }
+    .info-table tr:last-child td { border-bottom: none; }
+
+    @media (max-width: 640px) {
+      .quiz-option { font-size: 0.85rem; padding: 12px 16px; }
+      .info-table { font-size: 0.7rem; }
+    }
+  </style>
+</body>
+</html>

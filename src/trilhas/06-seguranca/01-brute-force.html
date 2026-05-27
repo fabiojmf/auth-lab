@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brute Force Protection | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">06 — Segurança e Políticas</a> → <span>Brute Force Protection</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Brute Force Protection</h2>
+
+      <p>Em um ambiente SSO, o Keycloak é o <strong>ponto único de entrada</strong> para todos os sistemas. Isso significa que um atacante que consegue a senha de um usuário ganha acesso a <em>todas</em> as aplicações conectadas. Proteção contra força bruta não é opcional — é essencial.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🎯</span>
+        <h3>Um ponto de entrada = alvo de alto valor</h3>
+        <p>Se o Keycloak autentica 20 sistemas, uma senha comprometida abre 20 portas.</p>
+      </div>
+
+      <h3>Como o Keycloak detecta</h3>
+
+      <p>O Keycloak monitora tentativas de login falhadas em duas dimensões:</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>👤 Por Usuário</h4>
+          <div class="comp-field">Conta quantas vezes o login falhou para um username específico</div>
+          <div class="comp-field">Independente do IP de origem</div>
+          <div class="comp-field">Protege contra ataques distribuídos (múltiplos IPs, mesmo alvo)</div>
+        </div>
+        <div class="comparison-side">
+          <h4>🌐 Por IP</h4>
+          <div class="comp-field">Conta falhas vindas do mesmo endereço IP</div>
+          <div class="comp-field">Independente do username tentado</div>
+          <div class="comp-field">Protege contra credential stuffing (um IP, múltiplos usuários)</div>
+        </div>
+      </div>
+
+      <h3>Configuração</h3>
+
+      <p>Acesse: <strong>Realm Settings → Security Defenses → Brute Force Detection</strong></p>
+
+      <div class="warning-box">
+        <span class="wb-icon">⚠️</span>
+        <p><strong>Não vem habilitado por padrão!</strong> Você precisa ativar manualmente. Muitos ambientes de produção estão desprotegidos simplesmente porque ninguém ligou essa opção.</p>
+      </div>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Parâmetro</th>
+              <th>Descrição</th>
+              <th>Default</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Enabled</code></td>
+              <td>Liga/desliga a proteção</td>
+              <td>Off</td>
+            </tr>
+            <tr>
+              <td><code>Max Login Failures</code></td>
+              <td>Quantas tentativas antes de bloquear</td>
+              <td>30</td>
+            </tr>
+            <tr>
+              <td><code>Wait Increment Seconds</code></td>
+              <td>Tempo de bloqueio inicial (dobra a cada falha)</td>
+              <td>60</td>
+            </tr>
+            <tr>
+              <td><code>Max Wait Seconds</code></td>
+              <td>Tempo máximo de bloqueio (teto)</td>
+              <td>900 (15 min)</td>
+            </tr>
+            <tr>
+              <td><code>Failure Reset Time</code></td>
+              <td>Após quanto tempo sem falhas o contador zera</td>
+              <td>43200 (12h)</td>
+            </tr>
+            <tr>
+              <td><code>Quick Login Check (ms)</code></td>
+              <td>Se duas tentativas vêm em menos que isso, conta como ataque</td>
+              <td>1000</td>
+            </tr>
+            <tr>
+              <td><code>Permanent Lockout</code></td>
+              <td>Se ativado, bloqueia permanentemente (precisa admin desbloquear)</td>
+              <td>Off</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>O que acontece quando é acionado</h3>
+
+      <p>Quando o limite é atingido, o usuário recebe o erro:</p>
+
+      <div class="code-block"><code>error=user_temporarily_disabled</code></div>
+
+      <p>Na tela de login, aparece uma mensagem genérica como "Invalid username or password" (por segurança, não revela que a conta está bloqueada).</p>
+
+      <h3>Simulação interativa</h3>
+
+      <div class="interactive-box">
+        <div class="brute-force-sim">
+          <div class="sim-header">
+            <span class="sim-user">👤 usuario@empresa.com</span>
+            <span class="sim-config">Max Failures: 5 | Wait: 60s</span>
+          </div>
+          <div class="sim-attempts" id="simAttempts">
+            <div class="attempt" id="attempt-0">
+              <span class="attempt-num">1</span>
+              <span class="attempt-desc">Tentativa com senha errada</span>
+              <span class="attempt-result attempt-fail">❌ Invalid credentials</span>
+            </div>
+          </div>
+          <div class="sim-controls">
+            <button class="btn" id="btnAttempt" onclick="nextAttempt()">Tentar login →</button>
+            <button class="btn btn-secondary" onclick="resetSim()">Resetar</button>
+          </div>
+          <div class="sim-status" id="simStatus">
+            <span class="status-counter">Falhas: <strong id="failCount">1</strong>/5</span>
+            <span class="status-state" id="statusState">🟢 Conta ativa</span>
+          </div>
+        </div>
+      </div>
+
+      <h3>Como desbloquear</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <strong>Via Admin Console</strong>
+            <p>Users → selecione o usuário → menu de ações (⋮) → 'Unlock user'. Em versões mais antigas, pode estar na aba Sessions.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <strong>Esperar o timeout</strong>
+            <p>Após o <code>Wait Increment Seconds</code> expirar, o usuário pode tentar novamente (a menos que Permanent Lockout esteja ativo)</p>
+          </div>
+        </div>
+      </div>
+
+      <p><strong>Via API REST (automação):</strong></p>
+      <pre>DELETE /admin/realms/{realm}/attack-detection/brute-force/users/{userId}</pre>
+      <p>Útil para scripts de suporte e automação em ambientes com muitos usuários.</p>
+
+      <h3>No Event Log</h3>
+
+      <p>Quando o brute force é acionado, o log de eventos mostra:</p>
+
+      <div class="code-block"><code>Type: LOGIN_ERROR
+Client: account-console
+User: usuario@empresa.com
+IP: 192.168.1.100
+Error: user_temporarily_disabled
+Details: username=usuario@empresa.com</code></div>
+
+      <h3>Cenário real</h3>
+
+      <div class="scenario-card">
+        <div class="sc-header">
+          <span class="sc-icon">🐛</span>
+          <span class="sc-title">"O dev testou com a senha errada 5 vezes"</span>
+        </div>
+        <p>Um desenvolvedor estava testando a integração e digitou a senha errada repetidamente. O usuário ficou bloqueado. Ninguém sabia por quê — a mensagem de erro era genérica. Só descobriram olhando os eventos no Admin Console.</p>
+        <p><strong>Solução:</strong> Admin desbloqueou via "Clear user login failures". Time ajustou o <code>Max Login Failures</code> para 10 no ambiente de dev.</p>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Key Takeaway</h4>
+        <p><strong>Equilíbrio entre segurança e usabilidade.</strong> Um <code>Max Login Failures</code> muito baixo (ex: 3) causa bloqueios frequentes de usuários legítimos. Muito alto (ex: 100) não protege contra nada. Valores entre 5-10 com wait incremental são um bom ponto de partida. Em produção, <strong>sempre habilite</strong> — o default desligado é uma armadilha.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="index.html">← Trilha 6</a>
+        <a href="02-rotacao-chaves.html">Próximo: Rotação de Chaves →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    let attemptCount = 1;
+    const maxAttempts = 5;
+
+    function nextAttempt() {
+      if (attemptCount >= 6) return;
+      attemptCount++;
+      const container = document.getElementById('simAttempts');
+      const failCount = document.getElementById('failCount');
+      const statusState = document.getElementById('statusState');
+      const btn = document.getElementById('btnAttempt');
+
+      if (attemptCount <= maxAttempts) {
+        container.innerHTML += `<div class="attempt"><span class="attempt-num">${attemptCount}</span><span class="attempt-desc">Tentativa com senha errada</span><span class="attempt-result attempt-fail">❌ Invalid credentials</span></div>`;
+        failCount.textContent = attemptCount;
+      }
+
+      if (attemptCount === maxAttempts) {
+        statusState.textContent = '🟡 Próxima tentativa será bloqueada';
+        statusState.style.color = '#e89800';
+      }
+
+      if (attemptCount > maxAttempts) {
+        container.innerHTML += `<div class="attempt attempt-blocked"><span class="attempt-num">${attemptCount}</span><span class="attempt-desc">Tentativa (qualquer senha)</span><span class="attempt-result attempt-lock">🔒 user_temporarily_disabled</span></div>`;
+        failCount.textContent = maxAttempts;
+        statusState.textContent = '🔴 Conta bloqueada (60s)';
+        statusState.style.color = '#e74c3c';
+        btn.disabled = true;
+        btn.textContent = 'Bloqueado';
+      }
+    }
+
+    function resetSim() {
+      attemptCount = 1;
+      document.getElementById('simAttempts').innerHTML = `<div class="attempt"><span class="attempt-num">1</span><span class="attempt-desc">Tentativa com senha errada</span><span class="attempt-result attempt-fail">❌ Invalid credentials</span></div>`;
+      document.getElementById('failCount').textContent = '1';
+      document.getElementById('statusState').textContent = '🟢 Conta ativa';
+      document.getElementById('statusState').style.color = '';
+      document.getElementById('btnAttempt').disabled = false;
+      document.getElementById('btnAttempt').textContent = 'Tentar login →';
+    }
+  </script>
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+
+    .warning-box { background: rgba(255, 165, 0, 0.08); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: flex-start; gap: 12px; margin: 16px 0; }
+    .wb-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .warning-box p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+
+    .brute-force-sim { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .sim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .sim-user { font-weight: 600; font-size: 0.9rem; }
+    .sim-config { font-size: 0.75rem; color: var(--text-secondary); background: var(--bg-secondary); padding: 4px 8px; border-radius: 4px; }
+    .sim-attempts { margin-bottom: 16px; }
+    .attempt { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; background: var(--bg-secondary); }
+    .attempt-blocked { background: rgba(231, 76, 60, 0.08); border: 1px solid rgba(231, 76, 60, 0.2); }
+    .attempt-num { background: var(--accent); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; flex-shrink: 0; }
+    .attempt-blocked .attempt-num { background: #e74c3c; }
+    .attempt-desc { flex: 1; font-size: 0.8rem; color: var(--text-secondary); }
+    .attempt-result { font-size: 0.75rem; font-weight: 500; }
+    .attempt-fail { color: #e89800; }
+    .attempt-lock { color: #e74c3c; font-weight: 600; }
+    .sim-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+    .sim-status { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid var(--border); font-size: 0.8rem; }
+    .status-counter { color: var(--text-secondary); }
+
+    .steps-list { margin: 20px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+    .step-content p { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0; }
+
+    .scenario-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+    .sc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .sc-icon { font-size: 1.2rem; }
+    .sc-title { font-weight: 600; font-size: 0.95rem; }
+    .scenario-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0; }
+
+    h3 { font-family: var(--font-display); }
+
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .sim-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

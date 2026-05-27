@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tour pelo Admin Console | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">02 — Instalação e Arquitetura</a> → <span>Tour pelo Admin Console</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Tour pelo Admin Console</h2>
+
+      <p>O Admin Console é seu centro de controle. Vamos explorar cada seção para que você saiba exatamente onde encontrar o que precisa.</p>
+
+      <h3>O menu lateral</h3>
+
+      <p>Clique em cada item para ver o que ele faz:</p>
+
+      <div class="interactive-box">
+        <div class="sidebar-layout">
+        <div class="sidebar-mockup">
+          <div class="sidebar-item active" onclick="showSidebarInfo(this, 'clients')">
+            <span class="sidebar-icon">📱</span> Clients
+          </div>
+          <div class="sidebar-item" onclick="showSidebarInfo(this, 'clientScopes')">
+            <span class="sidebar-icon">📋</span> Client Scopes
+          </div>
+          <div class="sidebar-item" onclick="showSidebarInfo(this, 'realmRoles')">
+            <span class="sidebar-icon">🎭</span> Realm Roles
+          </div>
+          <div class="sidebar-item" onclick="showSidebarInfo(this, 'users')">
+            <span class="sidebar-icon">👤</span> Users
+          </div>
+          <div class="sidebar-item" onclick="showSidebarInfo(this, 'groups')">
+            <span class="sidebar-icon">👥</span> Groups
+          </div>
+          <div class="sidebar-item" onclick="showSidebarInfo(this, 'sessions')">
+            <span class="sidebar-icon">🔗</span> Sessions
+          </div>
+          <div class="sidebar-item" onclick="showSidebarInfo(this, 'events')">
+            <span class="sidebar-icon">📊</span> Events
+          </div>
+          <div class="sidebar-item" onclick="showSidebarInfo(this, 'realmSettings')">
+            <span class="sidebar-icon">⚙️</span> Realm Settings
+          </div>
+          <div class="sidebar-item" onclick="showSidebarInfo(this, 'authentication')">
+            <span class="sidebar-icon">🔐</span> Authentication
+          </div>
+          <div class="sidebar-item" onclick="showSidebarInfo(this, 'identityProviders')">
+            <span class="sidebar-icon">🌐</span> Identity Providers
+          </div>
+          <div class="sidebar-item" onclick="showSidebarInfo(this, 'userFederation')">
+            <span class="sidebar-icon">🗄️</span> User Federation
+          </div>
+        </div>
+        <div class="sidebar-detail" id="sidebarDetail">
+          <p id="detailDesc">Aplicações conectadas a este realm. Cada app que usa o Keycloak para autenticação precisa ser registrada como um client.</p>
+          <div id="detailExamples" class="detail-examples">
+            <strong>Exemplos:</strong> sua SPA React, sua API backend, o próprio Admin Console
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <h3>A barra superior</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>🔄 Realm Selector (esquerda)</h4>
+          <ul>
+            <li>Mostra o realm atual</li>
+            <li>Clique para trocar de realm</li>
+            <li>Botão "Create Realm" no dropdown</li>
+            <li>Tudo que você vê muda ao trocar</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>👤 Menu do Admin (direita)</h4>
+          <ul>
+            <li>Nome do usuário logado</li>
+            <li>Manage Account (self-service)</li>
+            <li>Sign Out</li>
+            <li>Realm info e server info</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Padrão de navegação</h3>
+
+      <p>O console segue sempre o mesmo padrão:</p>
+
+      <div class="interactive-box">
+        <div class="nav-pattern">
+          <div class="nav-step-visual">
+            <div class="nav-node" id="navList">
+              <span>📋 Lista</span>
+              <small>ex: todos os clients</small>
+            </div>
+            <div class="nav-arrow">→</div>
+            <div class="nav-node" id="navDetail">
+              <span>📄 Detalhe</span>
+              <small>ex: client "my-app"</small>
+            </div>
+            <div class="nav-arrow">→</div>
+            <div class="nav-node" id="navTabs">
+              <span>📑 Abas</span>
+              <small>Settings / Credentials / Roles</small>
+            </div>
+          </div>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 16px; text-align: center;">
+          <strong>Lista → Detalhe → Abas.</strong> Esse padrão se repete em Clients, Users, Roles, Groups...
+        </p>
+      </div>
+
+      <h3>A URL conta a história</h3>
+
+      <div class="interactive-box">
+        <div class="url-breakdown">
+          <code class="url-display">/admin/<span class="url-part realm">master</span>/console/#/<span class="url-part realm2">master</span>/<span class="url-part section">clients</span>/<span class="url-part id">abc123</span>/<span class="url-part tab">settings</span></code>
+        </div>
+        <div class="url-legend">
+          <span><span class="url-dot realm-dot"></span> realm</span>
+          <span><span class="url-dot section-dot"></span> seção</span>
+          <span><span class="url-dot id-dot"></span> ID do recurso</span>
+          <span><span class="url-dot tab-dot"></span> aba ativa</span>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">Olhando a URL você sempre sabe: em qual realm está, em qual seção, qual recurso e qual aba.</p>
+      </div>
+
+      <h3>Pro tips</h3>
+
+      <div class="interactive-box">
+        <div class="tips-grid">
+          <div class="tip-card">
+            <div class="tip-icon">🔍</div>
+            <h4>Ctrl+F funciona</h4>
+            <p>Em listas longas de clients ou users, use a busca do navegador.</p>
+          </div>
+          <div class="tip-card">
+            <div class="tip-icon">🖱️</div>
+            <h4>Abrir em nova aba</h4>
+            <p>Right-click → Open in new tab funciona na maioria dos links internos.</p>
+          </div>
+          <div class="tip-card">
+            <div class="tip-icon">⌨️</div>
+            <h4>Busca interna</h4>
+            <p>Nas seções Users e Clients há um campo de busca no topo da lista.</p>
+          </div>
+          <div class="tip-card">
+            <div class="tip-icon">🔖</div>
+            <h4>Favoritar URLs</h4>
+            <p>Salve nos favoritos as páginas que você acessa com frequência.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Mapa mental</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr><th>Preciso...</th><th>Vou em...</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Registrar uma aplicação</td><td>Clients → Create Client</td></tr>
+            <tr><td>Criar um usuário</td><td>Users → Add User</td></tr>
+            <tr><td>Definir permissões</td><td>Realm Roles → Create Role</td></tr>
+            <tr><td>Ver quem está logado</td><td>Sessions</td></tr>
+            <tr><td>Investigar um problema</td><td>Events → Login Events</td></tr>
+            <tr><td>Mudar a tela de login</td><td>Realm Settings → Themes</td></tr>
+            <tr><td>Configurar login social</td><td>Identity Providers</td></tr>
+            <tr><td>Conectar LDAP</td><td>User Federation</td></tr>
+            <tr><td>Mudar política de senha</td><td>Authentication → Policies → Password Policy</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>O Admin Console é seu centro de controle. Aprenda o menu lateral e o padrão Lista → Detalhe → Abas. Com isso, você encontra qualquer coisa.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="02-realms.html">← Módulo anterior</a>
+        <a href="04-estrutura-completa.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    const sidebarData = {
+      clients: { desc: 'Aplicações conectadas a este realm. Cada app que usa o Keycloak para autenticação precisa ser registrada como um client.', examples: '<strong>Exemplos:</strong> sua SPA React, sua API backend, o próprio Admin Console' },
+      clientScopes: { desc: 'Configurações reutilizáveis de scopes e mappers. Defina uma vez, aplique em vários clients.', examples: '<strong>Exemplos:</strong> scope "email" que adiciona o email ao token, scope "roles" que inclui as roles' },
+      realmRoles: { desc: 'Permissões globais disponíveis neste realm. Podem ser atribuídas a usuários ou grupos.', examples: '<strong>Exemplos:</strong> "admin", "user", "manager"' },
+      users: { desc: 'Pessoas (ou service accounts) que podem se autenticar neste realm.', examples: '<strong>Ações:</strong> criar, editar, resetar senha, ver sessões, atribuir roles' },
+      groups: { desc: 'Unidades organizacionais para agrupar usuários. Simplificam a atribuição de roles.', examples: '<strong>Exemplos:</strong> "developers", "managers", "external-users"' },
+      sessions: { desc: 'Sessões de login ativas neste momento. Veja quem está logado e de onde.', examples: '<strong>Ações:</strong> ver sessões ativas, forçar logout de um usuário ou de todos' },
+      events: { desc: 'Log de auditoria. Login events (quem logou/falhou) e Admin events (quem mudou o quê).', examples: '<strong>Uso:</strong> investigar falhas de login, auditar mudanças de configuração' },
+      realmSettings: { desc: 'Configurações gerais do realm: login, email, temas, tokens, sessões, segurança.', examples: '<strong>Detalhado no</strong> <a href="05-configuracao-realm.html" style="color:var(--accent)">Módulo 5</a>' },
+      authentication: { desc: 'Fluxos de autenticação, políticas de senha, configuração de OTP/2FA.', examples: '<strong>Exemplos:</strong> exigir OTP para admins, definir senha mínima de 12 caracteres' },
+      identityProviders: { desc: 'Fontes externas de login. Permite "Login com Google", "Login com GitHub", SAML, etc.', examples: '<strong>Exemplos:</strong> Google, GitHub, Facebook, SAML corporativo' },
+      userFederation: { desc: 'Conectar a stores externos de usuários. Os usuários continuam no LDAP/AD mas autenticam via Keycloak.', examples: '<strong>Exemplos:</strong> Active Directory, OpenLDAP, Kerberos' }
+    };
+
+    function showSidebarInfo(el, key) {
+      document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+      const data = sidebarData[key];
+      document.getElementById('detailDesc').innerHTML = data.desc;
+      document.getElementById('detailExamples').innerHTML = data.examples;
+    }
+  </script>
+  <style>
+    .sidebar-mockup { display: flex; flex-direction: column; gap: 2px; min-width: 200px; }
+    .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: all 0.15s; border: 1px solid transparent; }
+    .sidebar-item:hover { background: var(--bg-card); border-color: var(--border); }
+    .sidebar-item.active { background: var(--bg-card); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+    .sidebar-icon { font-size: 1rem; }
+    .sidebar-detail { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; flex: 1; }
+    .sidebar-detail p { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.6; }
+    .detail-examples { font-size: 0.82rem; color: var(--text-secondary); padding-top: 10px; border-top: 1px solid var(--border); }
+    .sidebar-layout { display: flex; gap: 20px; }
+
+    @media (max-width: 640px) {
+      .sidebar-layout { flex-direction: column; }
+    }
+
+    .nav-pattern { padding: 16px 0; }
+    .nav-step-visual { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .nav-node { background: var(--bg-card); border: 2px solid var(--border); border-radius: var(--radius); padding: 16px 20px; text-align: center; min-width: 120px; }
+    .nav-node span { display: block; font-weight: 600; font-size: 0.9rem; }
+    .nav-node small { font-size: 0.75rem; color: var(--text-secondary); }
+    .nav-arrow { font-size: 1.5rem; color: var(--accent); font-weight: 700; }
+
+    .url-breakdown { background: var(--bg-card); border-radius: var(--radius); padding: 16px; overflow-x: auto; margin-bottom: 12px; }
+    .url-display { font-size: 0.8rem; white-space: nowrap; }
+    .url-part.realm, .url-part.realm2 { color: #e74c3c; font-weight: 600; }
+    .url-part.section { color: #2ecc71; font-weight: 600; }
+    .url-part.id { color: #f39c12; font-weight: 600; }
+    .url-part.tab { color: #9b59b6; font-weight: 600; }
+    .url-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.8rem; color: var(--text-secondary); }
+    .url-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+    .realm-dot { background: #e74c3c; }
+    .section-dot { background: #2ecc71; }
+    .id-dot { background: #f39c12; }
+    .tab-dot { background: #9b59b6; }
+
+    .tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .tip-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .tip-icon { font-size: 1.5rem; margin-bottom: 8px; }
+    .tip-card h4 { font-family: var(--font-display); font-size: 0.9rem; margin-bottom: 4px; }
+    .tip-card p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .info-table tr:last-child td { border-bottom: none; }
+
+    @media (max-width: 640px) {
+      .tips-grid { grid-template-columns: 1fr; }
+      .nav-step-visual { flex-direction: column; }
+      .nav-arrow { transform: rotate(90deg); }
+      .comparison { grid-template-columns: 1fr; }
+      .info-table { font-size: 0.75rem; }
+    }
+  </style>
+</body>
+</html>

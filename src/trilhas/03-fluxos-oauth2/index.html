@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trilha 3 — Fluxos OAuth2/OIDC | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <span>03 — Fluxos OAuth2/OIDC</span>
+    </nav>
+
+    <section class="hero">
+      <h2>Fluxos OAuth2/OIDC</h2>
+      <p>Como a autenticação realmente acontece. Cada fluxo animado passo a passo — veja os requests, redirects e tokens sendo trocados.</p>
+    </section>
+
+    <section class="modules" id="main-content">
+      <a href="01-authorization-code.html" class="card module-card">
+        <div class="module-number">1</div>
+        <div class="module-info">
+          <h3>Authorization Code Flow</h3><span class="module-time">~10 min</span>
+          <p>O fluxo padrão. Usuário loga via redirect, aplicação recebe um code e troca por token. O mais seguro e mais usado.</p>
+        </div>
+      </a>
+
+      <a href="02-client-credentials.html" class="card module-card">
+        <div class="module-number">2</div>
+        <div class="module-info">
+          <h3>Client Credentials</h3><span class="module-time">~6 min</span>
+          <p>Máquina falando com máquina. Sem usuário, sem browser. O client se autentica como ele mesmo.</p>
+        </div>
+      </a>
+
+      <a href="03-direct-grant.html" class="card module-card">
+        <div class="module-number">3</div>
+        <div class="module-info">
+          <h3>Direct Grant (Resource Owner Password)</h3>
+          <p>A aplicação recebe a senha do usuário e troca por token. Legado, mas ainda usado.</p>
+        </div>
+      </a>
+
+      <a href="04-refresh-token.html" class="card module-card">
+        <div class="module-number">4</div>
+        <div class="module-info">
+          <h3>Refresh Token</h3><span class="module-time">~7 min</span>
+          <p>Como renovar o acesso sem pedir login de novo. O ciclo de vida dos tokens.</p>
+        </div>
+      </a>
+
+      <a href="05-quando-usar.html" class="card module-card">
+        <div class="module-number">5</div>
+        <div class="module-info">
+          <h3>Quando usar cada fluxo</h3><span class="module-time">~7 min</span>
+          <p>Quiz interativo: dado um cenário, qual fluxo escolher? Árvore de decisão prática.</p>
+        </div>
+      </a>
+    </section>
+  </div>
+</body>
+</html>

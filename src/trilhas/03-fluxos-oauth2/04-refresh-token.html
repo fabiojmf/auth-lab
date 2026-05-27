@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Refresh Token Flow | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">03 — Fluxos OAuth2/OIDC</a> → <span>Refresh Token</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Refresh Token Flow</h2>
+
+      <p>O access_token tem vida curta (minutos). Quando expira, o usuário precisaria logar de novo. O refresh_token resolve isso — permite renovar o acesso sem interação do usuário.</p>
+
+      <h3>O ciclo de vida dos tokens</h3>
+
+      <div class="interactive-box">
+        <div class="timeline">
+          <div class="timeline-bar">
+            <div class="timeline-segment segment-access">
+              <span class="segment-label">access_token</span>
+              <span class="segment-duration">5–30 min</span>
+            </div>
+            <div class="timeline-segment segment-refresh">
+              <span class="segment-label">refresh_token</span>
+              <span class="segment-duration">horas / dias</span>
+            </div>
+          </div>
+          <div class="timeline-markers">
+            <div class="marker marker-start"><span class="marker-dot"></span>Login</div>
+            <div class="marker marker-mid"><span class="marker-dot"></span>Access expira</div>
+            <div class="marker marker-end"><span class="marker-dot"></span>Refresh expira<br><small>→ login de novo</small></div>
+          </div>
+        </div>
+      </div>
+
+      <h3>O fluxo passo a passo</h3>
+
+      <div class="interactive-box flow-animation">
+        <div class="flow-step-detail" id="flowStep">
+          <div class="step-visual" id="stepVisual"></div>
+          <div class="step-text" id="stepText"></div>
+          <div class="step-http" id="stepHttp"></div>
+        </div>
+
+        <div class="scene-controls">
+          <button class="btn btn-secondary" id="btnPrev" onclick="prevStep()" disabled>← Anterior</button>
+          <span class="step-indicator" id="stepIndicator">1 / 4</span>
+          <button class="btn" id="btnNext" onclick="nextStep()">Próximo →</button>
+        </div>
+      </div>
+
+      <h3>Por que não usar um access_token de longa duração?</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>❌ Access token longo (ex: 24h)</h4>
+          <ul>
+            <li>Se roubado, atacante tem acesso por 24h</li>
+            <li>Não pode ser revogado facilmente (é stateless)</li>
+            <li>Mudanças de permissão demoram a refletir</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>✅ Access curto + Refresh longo</h4>
+          <ul>
+            <li>Se access roubado, expira em minutos</li>
+            <li>Refresh pode ser revogado no servidor</li>
+            <li>A cada renovação, permissões são atualizadas</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Quando o refresh_token também expira</h3>
+
+      <p>Se o refresh_token expirar (ou for revogado), o usuário precisa fazer login novamente. Isso acontece quando:</p>
+
+      <ul class="feature-list">
+        <li>O tempo de vida do refresh_token acabou</li>
+        <li>O administrador revogou a sessão do usuário</li>
+        <li>O usuário fez logout</li>
+        <li>As chaves do realm foram rotacionadas (isso invalida todos os tokens existentes)</li>
+      </ul>
+
+      <h3>Refresh Token Rotation (segurança moderna)</h3>
+
+      <p>Uma prática recomendada: a cada vez que o refresh_token é usado, o Keycloak emite um <strong>novo</strong> refresh_token e invalida o anterior. Isso significa que:</p>
+
+      <ul class="feature-list">
+        <li>Cada refresh_token só pode ser usado <strong>uma vez</strong></li>
+        <li>Se um atacante roubar um refresh_token antigo, ele já foi invalidado</li>
+        <li>Se o Keycloak detectar reuso de um refresh_token já usado, revoga toda a sessão (possível roubo)</li>
+      </ul>
+
+      <p>O Keycloak suporta isso nativamente. É configurável por realm em "Realm Settings" → "Tokens" → "Revoke Refresh Token".</p>
+
+      <h3>Onde guardar o refresh_token?</h3>
+
+      <p>O refresh_token é sensível — se alguém roubar, pode gerar novos access_tokens. Guarde com cuidado:</p>
+
+      <ul class="feature-list">
+        <li><strong>Backend (melhor):</strong> em memória ou banco de dados da sessão do servidor</li>
+        <li><strong>SPA:</strong> idealmente no backend (padrão BFF). Se no browser, apenas em memória — nunca em localStorage</li>
+        <li><strong>Mobile:</strong> secure storage do sistema (iOS Keychain / Android Keystore)</li>
+      </ul>
+
+      <h3>Testando com curl</h3>
+
+      <div class="interactive-box">
+        <pre class="code-block">curl -X POST https://keycloak/realms/meu-realm/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=refresh_token" \
+  -d "client_id=minha-app" \
+  -d "client_secret=meu-secret" \
+  -d "refresh_token=eyJhbG..."</pre>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Resumo</h4>
+        <p><strong>Refresh Token</strong> = troca um refresh_token por um novo access_token<br>
+        <strong>Por que existe</strong> = access_token curto (segurança) + refresh_token longo (conveniência)<br>
+        <strong>Quando falha</strong> = refresh expirado, sessão revogada, chaves rotacionadas → login de novo</p>
+      </div>
+
+      <section class="lab-section">
+        <h3>🧪 Lab: Refresh Token na prática</h3>
+        <p>Use o refresh_token obtido no lab anterior para renovar o access_token.</p>
+
+        <div class="lab-steps">
+          <div class="lab-step">
+            <span class="lab-step-num">1</span>
+            <div>
+              <strong>Primeiro, obtenha tokens via Direct Grant:</strong>
+              <pre><code>curl -X POST http://localhost:8080/realms/authlab/protocol/openid-connect/token \
+  -d "grant_type=password" \
+  -d "client_id=app-teste-confidential" \
+  -d "client_secret=meu-secret-super-seguro" \
+  -d "username=maria" \
+  -d "password=senha123"</code></pre>
+              <p>Copie o <code>refresh_token</code> da resposta.</p>
+            </div>
+          </div>
+          <div class="lab-step">
+            <span class="lab-step-num">2</span>
+            <div>
+              <strong>Use o refresh_token para obter um novo access_token:</strong>
+              <pre><code>curl -X POST http://localhost:8080/realms/authlab/protocol/openid-connect/token \
+  -d "grant_type=refresh_token" \
+  -d "client_id=app-teste-confidential" \
+  -d "client_secret=meu-secret-super-seguro" \
+  -d "refresh_token=COLE_O_REFRESH_TOKEN_AQUI"</code></pre>
+              <p>Você recebe um NOVO access_token (e possivelmente um novo refresh_token via rotation).</p>
+            </div>
+          </div>
+          <div class="lab-step">
+            <span class="lab-step-num">3</span>
+            <div>
+              <strong>Compare os tokens:</strong>
+              <p>Decodifique ambos os access_tokens em jwt.io. Note que o <code>iat</code> (issued at) e <code>exp</code> são diferentes — é um token novo com nova validade.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="module-nav">
+        <a href="03-direct-grant.html">← Módulo anterior</a>
+        <a href="05-quando-usar.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    const steps = [
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">💻</span><span class="flow-arrow-badge arrow-right">access_token</span><span class="flow-actor-badge">📦</span></div>',
+        text: '<strong>1. Aplicação usa o access_token</strong><br>Tudo funciona normalmente enquanto o token é válido.',
+        http: '<code>GET /api/dados<br>Authorization: Bearer eyJhbG...<br><br>200 OK ✓</code>'
+      },
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">💻</span><span class="flow-arrow-badge arrow-right">token expirado</span><span class="flow-actor-badge">📦</span></div>',
+        text: '<strong>2. Access token expirou</strong><br>A API rejeita o request. O token não é mais válido.',
+        http: '<code>GET /api/dados<br>Authorization: Bearer eyJhbG...<br><br>401 Unauthorized ✗<br>{"error": "token_expired"}</code>'
+      },
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">💻</span><span class="flow-arrow-badge arrow-right">refresh_token</span><span class="flow-actor-badge">🔐</span></div>',
+        text: '<strong>3. Aplicação usa o refresh_token</strong><br>O backend envia o refresh_token ao Keycloak pedindo um novo access_token. Sem interação do usuário.',
+        http: '<code>POST /token<br>grant_type=refresh_token<br>client_id=minha-app<br>client_secret=meu-secret<br>refresh_token=eyJhbG...</code>'
+      },
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">🔐</span><span class="flow-arrow-badge arrow-right">novo access_token</span><span class="flow-actor-badge">💻</span></div>',
+        text: '<strong>4. Keycloak emite novos tokens</strong><br>O Keycloak valida o refresh_token e retorna um novo access_token (e possivelmente um novo refresh_token).',
+        http: '<code>200 OK<br>{<br>&nbsp;&nbsp;"access_token": "eyJNEW...",<br>&nbsp;&nbsp;"refresh_token": "eyJNEW...",<br>&nbsp;&nbsp;"expires_in": 300<br>}</code>'
+      }
+    ];
+
+    let currentStep = 0;
+    function renderStep() {
+      const step = steps[currentStep];
+      document.getElementById('stepVisual').innerHTML = step.visual;
+      document.getElementById('stepText').innerHTML = step.text;
+      document.getElementById('stepHttp').innerHTML = step.http ? `<div class="http-block">${step.http}</div>` : '';
+      document.getElementById('stepIndicator').textContent = `${currentStep + 1} / ${steps.length}`;
+      document.getElementById('btnPrev').disabled = currentStep === 0;
+      document.getElementById('btnNext').disabled = currentStep === steps.length - 1;
+    }
+    function nextStep() { if (currentStep < steps.length - 1) { currentStep++; renderStep(); } }
+    function prevStep() { if (currentStep > 0) { currentStep--; renderStep(); } }
+    document.addEventListener('DOMContentLoaded', renderStep);
+  </script>
+  <style>
+    .timeline { margin: 20px 0; }
+    .timeline-bar { display: flex; border-radius: 10px; overflow: hidden; height: 52px; border: 1px solid var(--border); }
+    .timeline-segment { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+    .segment-label { font-family: var(--mono); font-size: 0.75rem; font-weight: 500; }
+    .segment-duration { font-size: 0.75rem; opacity: 0.7; }
+    .segment-access { background: var(--accent); color: #fff; flex: 1; }
+    .segment-refresh { background: var(--accent-glow); color: var(--accent); flex: 4; }
+    .timeline-markers { display: flex; margin-top: 12px; position: relative; height: 40px; }
+    .marker { font-size: 0.75rem; color: var(--text-secondary); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; position: absolute; }
+    .marker-start { left: 0; }
+    .marker-mid { left: 20%; transform: translateX(-50%); }
+    .marker-end { right: 0; }
+    .marker small { color: var(--accent); font-size: 0.75rem; }
+    .marker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+    .marker-start .marker-dot { background: var(--accent); }
+    .marker-end .marker-dot { background: #e74c3c; }
+
+    .flow-animation { padding: 24px; }
+    .flow-step-detail + .scene-controls { margin-top: auto; }
+    .flow-step-detail { height: 400px; overflow-y: auto; }
+    .flow-visual-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .flow-actor-badge { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 1.2rem; text-align: center; min-width: 50px; }
+    .flow-arrow-badge { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; font-size: 0.85rem; font-family: var(--font-display); font-weight: 500; color: var(--text-secondary); white-space: nowrap; transition: all 0.2s ease; }
+    .flow-arrow-badge:hover { border-color: var(--accent); background: var(--accent-glow); }
+    .flow-arrow-badge.arrow-right::after { content: ' →'; color: var(--accent); font-size: 1.3rem; font-weight: 700; }
+    .flow-arrow-badge.arrow-left::before { content: '← '; color: var(--accent); font-size: 1.3rem; font-weight: 700; }
+    .step-text { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; }
+    .step-text strong { color: var(--text-primary); }
+    .http-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; font-family: var(--mono); font-size: 0.88rem; color: var(--text-primary); line-height: 1.7; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+    .http-block code { background: none; padding: 0; font-size: inherit; border: none; }
+    .code-block { font-size: 0.8rem; line-height: 1.6; }
+    .scene-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .step-indicator { font-size: 0.85rem; color: var(--text-secondary); min-width: 40px; text-align: center; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .feature-list { padding-left: 20px; margin: 16px 0; }
+    .feature-list li { padding: 4px 0; color: var(--text-secondary); font-size: 0.9rem; }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .scene-controls .btn { padding: 8px 12px; font-size: 0.75rem; }
+      .flow-step-detail { min-height: auto; }
+      .http-block { font-size: 0.8rem; }
+
+    }
+  </style>
+</body>
+</html>

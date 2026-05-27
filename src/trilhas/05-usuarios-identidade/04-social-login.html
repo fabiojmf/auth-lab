@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Login | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">05 — Usuários e Identidade</a> → <span>Social Login</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Social Login</h2>
+
+      <p>Social Login é um caso específico de Identity Brokering: o Keycloak vem com provedores sociais pré-configurados, simplificando a integração com Google, GitHub, Facebook e outros.</p>
+
+      <h3>Provedores built-in no Keycloak</h3>
+
+      <div class="interactive-box">
+        <div class="providers-grid">
+          <div class="provider-pill">🔵 Google</div>
+          <div class="provider-pill">⚫ GitHub</div>
+          <div class="provider-pill">🔵 Facebook</div>
+          <div class="provider-pill">🟦 Microsoft</div>
+          <div class="provider-pill">⚪ Apple</div>
+          <div class="provider-pill">🔵 Twitter/X</div>
+          <div class="provider-pill">🔵 LinkedIn</div>
+          <div class="provider-pill">🟣 GitLab</div>
+          <div class="provider-pill">🟠 Stack Overflow</div>
+          <div class="provider-pill">🔵 Bitbucket</div>
+          <div class="provider-pill">🟡 PayPal</div>
+          <div class="provider-pill">⚙️ OpenID Connect (genérico)</div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">Cada um já tem os endpoints pré-configurados. Você só precisa fornecer Client ID + Secret. No Admin Console do KC 20+, todos ficam em <strong>Identity Providers → Add provider</strong> (não existe seção separada "Social").</p>
+      </div>
+
+      <h3>Configuração passo a passo — Google como exemplo</h3>
+
+      <div class="interactive-box">
+        <div class="flow-steps" id="configFlow">
+          <div class="flow-step active" data-step="1">
+            <div class="flow-icon">☁️</div>
+            <p><strong>1.</strong> No Google Cloud Console: APIs & Services → Credentials → Create OAuth Client ID</p>
+            <p><em>Tipo: Web Application. Anote o Client ID e Client Secret gerados.</em></p>
+          </div>
+          <div class="flow-step" data-step="2">
+            <div class="flow-icon">🔗</div>
+            <p><strong>2.</strong> No Google, configure o Authorized Redirect URI:</p>
+            <code class="code-url">https://seu-keycloak.com/realms/{realm}/broker/google/endpoint</code>
+          </div>
+          <div class="flow-step" data-step="3">
+            <div class="flow-icon">⚙️</div>
+            <p><strong>3.</strong> No Keycloak: Identity Providers → Add provider → Google</p>
+            <p><em>Cole o Client ID e Client Secret do passo 1.</em></p>
+          </div>
+          <div class="flow-step" data-step="4">
+            <div class="flow-icon">📋</div>
+            <p><strong>4.</strong> Configure os scopes: <code>email</code> e <code>profile</code> (padrão)</p>
+            <p><em>Scopes adicionais: openid, phone, address (se necessário).</em></p>
+          </div>
+          <div class="flow-step" data-step="5">
+            <div class="flow-icon">✅</div>
+            <p><strong>5.</strong> Salve. O botão "Login with Google" aparece automaticamente na tela de login.</p>
+            <p><em>Teste: acesse a tela de login do realm e clique no botão.</em></p>
+          </div>
+        </div>
+        <div class="scene-controls">
+          <button class="btn btn-secondary" id="btnPrevConfig" onclick="prevConfigStep()" disabled>← Anterior</button>
+          <span class="step-indicator" id="configIndicator">1 / 5</span>
+          <button class="btn" id="btnNextConfig" onclick="nextConfigStep()">Próximo →</button>
+        </div>
+      </div>
+
+      <h3>Experiência do usuário</h3>
+
+      <div class="interactive-box">
+        <div class="ux-flow">
+          <div class="ux-step">
+            <span class="ux-num">1</span>
+            <p>Usuário acessa a aplicação</p>
+          </div>
+          <div class="ux-arrow">→</div>
+          <div class="ux-step">
+            <span class="ux-num">2</span>
+            <p>Vê a tela de login do KC com botão "Google"</p>
+          </div>
+          <div class="ux-arrow">→</div>
+          <div class="ux-step">
+            <span class="ux-num">3</span>
+            <p>Clica, autentica no Google</p>
+          </div>
+          <div class="ux-arrow">→</div>
+          <div class="ux-step">
+            <span class="ux-num">4</span>
+            <p>Volta logado na aplicação</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Account Linking</h3>
+
+      <p>Um usuário pode ter múltiplas formas de login vinculadas à mesma conta:</p>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Cenário</th>
+              <th>Como funciona</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Usuário com senha quer adicionar Google</td>
+              <td>Acessa Account Console → Linked Accounts → vincula a conta Google</td>
+            </tr>
+            <tr>
+              <td>Usuário logou via Google, quer definir senha</td>
+              <td>Acessa Account Console → Password → define uma senha local</td>
+            </tr>
+            <tr>
+              <td>Primeiro login via Google, email já existe</td>
+              <td>First Login Flow decide: vincular automaticamente ou pedir confirmação</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Mappers de Social Login</h3>
+
+      <p>Cada provedor social retorna claims diferentes. Mappers transformam esses claims em atributos do Keycloak:</p>
+
+      <div class="interactive-box">
+        <div class="mapper-examples">
+          <div class="mapper-row">
+            <span class="mapper-from">Google: <code>picture</code></span>
+            <span class="mapper-arrow">→</span>
+            <span class="mapper-to">KC: <code>avatar_url</code> (custom attr)</span>
+          </div>
+          <div class="mapper-row">
+            <span class="mapper-from">GitHub: <code>login</code></span>
+            <span class="mapper-arrow">→</span>
+            <span class="mapper-to">KC: <code>github_username</code> (custom attr)</span>
+          </div>
+          <div class="mapper-row">
+            <span class="mapper-from">Microsoft: <code>preferred_username</code></span>
+            <span class="mapper-arrow">→</span>
+            <span class="mapper-to">KC: <code>email</code> (standard attr)</span>
+          </div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">Configure em: Identity Providers → [provider] → Mappers → Add mapper</p>
+      </div>
+
+      <h3>Segurança — riscos do Social Login</h3>
+
+      <div class="interactive-box" style="border-left: 3px solid #e74c3c;">
+        <h4 style="font-family: var(--font-display); color: #e74c3c; margin-bottom: 16px;">⚠️ Considerações de segurança</h4>
+
+        <div class="security-items">
+          <div class="sec-item">
+            <strong>Email verification trust</strong>
+            <p>O Google diz que <code>maria@gmail.com</code> é verificado. Mas e se alguém criou uma conta Google com o email corporativo de outra pessoa?</p>
+            <p><em>Configuração: "Trust Email" no IDP — habilite apenas para provedores confiáveis.</em></p>
+          </div>
+          <div class="sec-item">
+            <strong>Account takeover via email</strong>
+            <p>Atacante cria conta social com email da vítima → First Login Flow vincula à conta existente → atacante tem acesso.</p>
+            <p><em>Mitigação: exigir verificação de email antes de vincular (Verify Existing Account no First Login Flow).</em></p>
+          </div>
+          <div class="sec-item">
+            <strong>Scope creep</strong>
+            <p>Não peça mais scopes do que precisa. <code>email</code> + <code>profile</code> é suficiente para login. Evite pedir acesso a contatos, calendário, etc.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Quando usar — e quando NÃO usar</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Contexto</th>
+              <th>Social Login?</th>
+              <th>Por quê</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>App B2C (e-commerce, SaaS)</td>
+              <td><span style="color: green; font-weight: bold;">✓ Sim</span></td>
+              <td>Reduz fricção, aumenta conversão, UX familiar</td>
+            </tr>
+            <tr>
+              <td>App interna corporativa</td>
+              <td><span style="color: #e74c3c; font-weight: bold;">✗ Não</span></td>
+              <td>Use o IDP corporativo (Azure AD, LDAP). Controle centralizado.</td>
+            </tr>
+            <tr>
+              <td>Sistema judicial / governo</td>
+              <td><span style="color: #e74c3c; font-weight: bold;">✗ Não</span></td>
+              <td>Requisitos de segurança, auditoria, certificação digital</td>
+            </tr>
+            <tr>
+              <td>Plataforma de desenvolvedores</td>
+              <td><span style="color: green; font-weight: bold;">✓ Sim</span></td>
+              <td>GitHub login é esperado e natural para devs</td>
+            </tr>
+            <tr>
+              <td>App com dados sensíveis (saúde, financeiro)</td>
+              <td><span style="color: orange; font-weight: bold;">⚠ Depende</span></td>
+              <td>Pode usar para onboarding, mas exija MFA adicional</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>Social Login é apenas Identity Brokering com provedores pré-configurados. Tecnicamente, "Login com Google" funciona exatamente como "Login com outro Keycloak" — a diferença é que o Google já vem como template pronto. A decisão de usar ou não é de negócio e segurança, não técnica.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="03-identity-providers.html">← Módulo anterior</a>
+        <a href="05-mapeamento-identidade.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    let configStep = 1;
+    const totalConfigSteps = 5;
+
+    function showConfigStep(n) {
+      document.querySelectorAll('.flow-step').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.flow-step[data-step="${n}"]`).classList.add('active');
+      document.getElementById('configIndicator').textContent = `${n} / ${totalConfigSteps}`;
+      document.getElementById('btnPrevConfig').disabled = n === 1;
+      document.getElementById('btnNextConfig').disabled = n === totalConfigSteps;
+    }
+
+    function nextConfigStep() { if (configStep < totalConfigSteps) { configStep++; showConfigStep(configStep); } }
+    function prevConfigStep() { if (configStep > 1) { configStep--; showConfigStep(configStep); } }
+  </script>
+  <style>
+    .flow-steps { min-height: 100px; display: flex; align-items: center; justify-content: center; }
+    .flow-step { display: none; text-align: center; padding: 0 12px; }
+    .flow-step.active { display: block; }
+    .flow-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .flow-step p { color: var(--text-secondary); margin-bottom: 6px; }
+    .flow-step em { color: var(--accent); font-size: 0.85rem; }
+    .flow-step code { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+
+    .scene-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .step-indicator { font-size: 0.85rem; color: var(--text-secondary); min-width: 40px; text-align: center; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .providers-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .provider-pill { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 8px 14px; font-size: 0.8rem; font-weight: 500; }
+
+    .ux-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .ux-step { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; text-align: center; min-width: 100px; }
+    .ux-num { display: block; font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+    .ux-step p { font-size: 0.75rem; color: var(--text-secondary); margin: 0; }
+    .ux-arrow { color: var(--accent); font-weight: 700; font-size: 1.3rem; }
+
+    .mapper-examples { display: flex; flex-direction: column; gap: 8px; }
+    .mapper-row { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; }
+    .mapper-from { color: var(--text-secondary); min-width: 180px; }
+    .mapper-arrow { color: var(--accent); font-weight: 700; font-size: 1.3rem; }
+    .mapper-to { color: var(--text-primary); font-weight: 500; }
+    .mapper-row code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; }
+
+    .security-items { display: flex; flex-direction: column; gap: 16px; }
+    .sec-item { padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+    .sec-item strong { font-size: 0.85rem; color: var(--text-primary); display: block; margin-bottom: 4px; }
+    .sec-item p { font-size: 0.8rem; color: var(--text-secondary); margin: 4px 0; }
+    .sec-item em { color: var(--accent); }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .info-table tr:last-child td { border-bottom: none; }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .ux-flow { flex-direction: column; }
+      .ux-arrow { transform: rotate(90deg); }
+      .mapper-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .mapper-from { min-width: auto; }
+      .info-table { font-size: 0.75rem; }
+    }
+  </style>
+</body>
+</html>

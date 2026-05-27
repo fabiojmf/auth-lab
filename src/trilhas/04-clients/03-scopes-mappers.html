@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scopes e Mappers | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">04 — Clients na Prática</a> → <span>Scopes e Mappers</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Scopes e Mappers</h2>
+
+      <p>Scopes e mappers controlam <strong>o que vai dentro do token</strong>. Se o token não tem uma claim que você espera, a resposta quase sempre está aqui.</p>
+
+      <h3>O que são Client Scopes</h3>
+
+      <p>Um <strong>Client Scope</strong> é um container de configurações (mappers, roles, consent) que pode ser reutilizado entre vários clients. Pense nele como um "pacote de claims".</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>📦 Default Scopes</h4>
+          <p>Sempre incluídos no token, sem precisar pedir explicitamente no request.</p>
+          <ul>
+            <li><code>openid</code> — obrigatório para OIDC</li>
+            <li><code>profile</code> — name, family_name, etc.</li>
+            <li><code>email</code> — email, email_verified</li>
+            <li><code>roles</code> — realm e client roles</li>
+          </ul>
+          <p style="font-size: 0.8rem; margin-top: 8px;">No Keycloak 20+, os defaults também incluem <code>acr</code> (Authentication Context Class) e <code>web-origins</code> (para CORS automático).</p>
+        </div>
+        <div class="comparison-side">
+          <h4>🎯 Optional Scopes</h4>
+          <p>Só incluídos se a aplicação pedir via parâmetro <code>scope=</code>.</p>
+          <ul>
+            <li><code>address</code> — endereço do usuário</li>
+            <li><code>phone</code> — telefone</li>
+            <li><code>offline_access</code> — refresh token offline</li>
+            <li>Scopes customizados que você criar</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>O que são Protocol Mappers</h3>
+
+      <p>Um <strong>Protocol Mapper</strong> transforma dados do usuário/sessão em claims dentro do token. Cada scope contém um ou mais mappers.</p>
+
+      <div class="mapper-types">
+        <div class="mapper-card">
+          <div class="mc-header">
+            <span class="mc-icon">👤</span>
+            <span class="mc-title">User Attribute</span>
+          </div>
+          <p>Mapeia um atributo do usuário para uma claim no token.</p>
+          <div class="mc-example">Atributo <code>department</code> → claim <code>department</code></div>
+        </div>
+
+        <div class="mapper-card">
+          <div class="mc-header">
+            <span class="mc-icon">🎭</span>
+            <span class="mc-title">User Realm Role</span>
+          </div>
+          <p>Inclui as roles do realm do usuário no token.</p>
+          <div class="mc-example">Roles → claim <code>realm_access.roles</code></div>
+        </div>
+
+        <div class="mapper-card">
+          <div class="mc-header">
+            <span class="mc-icon">📌</span>
+            <span class="mc-title">Hardcoded Claim</span>
+          </div>
+          <p>Adiciona um valor fixo ao token, independente do usuário.</p>
+          <div class="mc-example">Claim <code>env</code> = <code>"production"</code> (sempre)</div>
+        </div>
+
+        <div class="mapper-card">
+          <div class="mc-header">
+            <span class="mc-icon">📝</span>
+            <span class="mc-title">User Session Note</span>
+          </div>
+          <p>Mapeia dados da sessão (ex: IP, método de autenticação).</p>
+          <div class="mc-example">Session note <code>clientAddress</code> → claim <code>ip</code></div>
+        </div>
+
+        <div class="mapper-card">
+          <div class="mc-header">
+            <span class="mc-icon">👥</span>
+            <span class="mc-title">Group Membership</span>
+          </div>
+          <p>Inclui os grupos do usuário como claim no token. Claim típica: groups. Muito usado em ambientes corporativos.</p>
+          <div class="mc-example">Grupos do usuário → claim <code>groups</code></div>
+        </div>
+      </div>
+
+      <h3>Full Scope Allowed</h3>
+
+      <div class="interactive-box">
+        <div class="fsa-toggle">
+          <button class="fsa-btn active" onclick="showFSA(true)">Full Scope: On (padrão)</button>
+          <button class="fsa-btn" onclick="showFSA(false)">Full Scope: Off</button>
+        </div>
+        <div id="fsa-on" class="fsa-content">
+          <p>✅ <strong>On (padrão):</strong> O token inclui <em>todas</em> as roles do usuário, de todos os clients e do realm.</p>
+          <div class="fsa-visual">
+            <div class="fsa-token">
+              <strong>Token contém:</strong>
+              <code>"realm_access": { "roles": ["admin", "user"] }</code>
+              <code>"resource_access": { "outro-client": { "roles": ["manage"] } }</code>
+            </div>
+          </div>
+          <p class="fsa-note">⚠️ Conveniente, mas o token pode ficar grande e expor roles desnecessárias.</p>
+        </div>
+        <div id="fsa-off" class="fsa-content" style="display:none;">
+          <p>🔒 <strong>Off:</strong> O token só inclui roles explicitamente atribuídas ao <em>scope</em> deste client.</p>
+          <div class="fsa-visual">
+            <div class="fsa-token">
+              <strong>Token contém:</strong>
+              <code>"realm_access": { "roles": ["user"] }</code>
+              <code>"resource_access": { }</code>
+            </div>
+          </div>
+          <p class="fsa-note">✅ Mais seguro. Use quando quer limitar o que cada client pode ver. Configure as roles na aba "Client Scopes" → "Scope".</p>
+        </div>
+      </div>
+
+      <h3>Dedicated Scope (Keycloak 20+)</h3>
+      <p>Cada client tem um scope dedicado (<code>{clientId}-dedicated</code>) visível na aba "Client Scopes". É onde ficam mappers específicos daquele client — diferente dos scopes compartilhados entre vários clients.</p>
+      <p>Se você precisa adicionar uma claim que só aparece no token de um client específico, adicione o mapper no dedicated scope dele.</p>
+
+      <h3>Caso prático: "Meu token não tem o email!"</h3>
+
+      <div class="troubleshoot-flow">
+        <div class="tf-step">
+          <span class="tf-num">1</span>
+          <span class="tf-text">Verifique se o scope <code>email</code> está nos <strong>Default Scopes</strong> do client</span>
+        </div>
+        <div class="tf-step">
+          <span class="tf-num">2</span>
+          <span class="tf-text">Se é optional, a aplicação precisa pedir <code>scope=openid email</code> no request</span>
+        </div>
+        <div class="tf-step">
+          <span class="tf-num">3</span>
+          <span class="tf-text">Dentro do scope <code>email</code>, verifique se o mapper "email" existe e está configurado para incluir no <strong>access token</strong> (não só no id_token)</span>
+        </div>
+        <div class="tf-step">
+          <span class="tf-num">4</span>
+          <span class="tf-text">Verifique se o usuário realmente tem o atributo email preenchido</span>
+        </div>
+      </div>
+
+      <h3>Simulador: Scopes → Token</h3>
+
+      <div class="interactive-box">
+        <p class="sim-desc">Selecione os scopes e veja como o token muda:</p>
+        <div class="scope-toggles">
+          <label class="scope-toggle"><input type="checkbox" checked onchange="updateToken()" value="openid"> openid</label>
+          <label class="scope-toggle"><input type="checkbox" checked onchange="updateToken()" value="profile"> profile</label>
+          <label class="scope-toggle"><input type="checkbox" checked onchange="updateToken()" value="email"> email</label>
+          <label class="scope-toggle"><input type="checkbox" onchange="updateToken()" value="roles"> roles</label>
+          <label class="scope-toggle"><input type="checkbox" onchange="updateToken()" value="phone"> phone</label>
+          <label class="scope-toggle"><input type="checkbox" onchange="updateToken()" value="custom"> custom:department</label>
+        </div>
+        <div class="sim-token" id="simToken"></div>
+      </div>
+
+      <p><em>Nota: claims como sub, iss, aud, exp, iat são sempre presentes no access_token (obrigatórias no JWT). O scope 'openid' habilita o fluxo OIDC e a emissão do id_token.</em></p>
+
+      <div class="key-takeaway">
+        <h4>💡 Resumo</h4>
+        <p><strong>Client Scope</strong> = pacote reutilizável de mappers e configurações.<br>
+        <strong>Protocol Mapper</strong> = regra que coloca dados no token (atributo → claim).<br>
+        <strong>Default scope</strong> = sempre incluído. <strong>Optional</strong> = só se pedido no request.<br>
+        <strong>Full Scope Allowed</strong> = On inclui tudo, Off restringe. Desabilite para segurança.<br>
+        <strong>Token sem claim?</strong> → Verifique: scope atribuído? mapper existe? "Add to access token" marcado?</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="02-configuracao-client.html">← Módulo anterior</a>
+        <a href="04-service-accounts.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    function showFSA(on) {
+      document.getElementById('fsa-on').style.display = on ? 'block' : 'none';
+      document.getElementById('fsa-off').style.display = on ? 'none' : 'block';
+      document.querySelectorAll('.fsa-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    const scopeClaims = {
+      openid: { sub: "f47ac10b-58cc-4372-a567-0e02b2c3d479", iss: "https://keycloak/realms/meu-realm", aud: "minha-app", exp: 1700000000, iat: 1699999700 },
+      profile: { name: "Maria Silva", preferred_username: "maria", given_name: "Maria", family_name: "Silva" },
+      email: { email: "maria@empresa.com", email_verified: true },
+      roles: { realm_access: { roles: ["user", "admin"] } },
+      phone: { phone_number: "+55 11 99999-0000", phone_number_verified: false },
+      custom: { department: "engineering", team: "platform" }
+    };
+
+    function updateToken() {
+      const checks = document.querySelectorAll('.scope-toggle input:checked');
+      let token = {};
+      checks.forEach(c => {
+        Object.assign(token, scopeClaims[c.value]);
+      });
+      document.getElementById('simToken').innerHTML = `<pre>${JSON.stringify(token, null, 2)}</pre>`;
+    }
+
+    document.addEventListener('DOMContentLoaded', updateToken);
+  </script>
+  <style>
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 8px; }
+    .comparison-side p { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; }
+    .comparison-side ul { padding-left: 16px; font-size: 0.8rem; color: var(--text-secondary); }
+    .comparison-side li { padding: 3px 0; }
+
+    .mapper-types { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+    .mapper-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .mc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .mc-icon { font-size: 1.1rem; }
+    .mc-title { font-weight: 600; font-size: 0.85rem; }
+    .mapper-card p { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px; }
+    .mc-example { background: var(--bg-secondary); border-radius: 4px; padding: 6px 10px; font-size: 0.75rem; color: var(--text-secondary); }
+
+    .fsa-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+    .fsa-btn { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 16px; font-size: 0.8rem; cursor: pointer; color: var(--text-secondary); font-family: inherit; transition: all var(--transition); }
+    .fsa-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(41, 151, 255, 0.05); }
+    .fsa-content p { font-size: 0.9rem; color: var(--text-secondary); }
+    .fsa-visual { margin: 12px 0; }
+    .fsa-token { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .fsa-token strong { display: block; font-size: 0.8rem; margin-bottom: 6px; }
+    .fsa-token code { display: block; font-size: 0.75rem; color: var(--text-secondary); padding: 2px 0; }
+    .fsa-note { font-size: 0.8rem; margin-top: 8px; }
+
+    .troubleshoot-flow { margin: 20px 0; }
+    .tf-step { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .tf-step:last-child { border-bottom: none; }
+    .tf-num { background: var(--accent); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; flex-shrink: 0; }
+    .tf-text { font-size: 0.85rem; color: var(--text-secondary); }
+
+    .sim-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; }
+    .scope-toggles { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .scope-toggle { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .scope-toggle input { accent-color: var(--accent); }
+    .sim-token { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; }
+    .sim-token pre { font-family: var(--mono); font-size: 0.75rem; color: var(--text-secondary); margin: 0; white-space: pre-wrap; }
+
+    h3 { font-family: var(--font-display); }
+
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .mapper-types { grid-template-columns: 1fr; }
+      .fsa-toggle { flex-direction: column; }
+      .scope-toggles { gap: 6px; }
+    }
+  </style>
+</body>
+</html>

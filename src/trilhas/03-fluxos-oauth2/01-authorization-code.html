@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authorization Code Flow | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">03 — Fluxos OAuth2/OIDC</a> → <span>Authorization Code Flow</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Authorization Code Flow</h2>
+
+      <p>Este é o fluxo <strong>mais usado e mais seguro</strong> do OAuth2/OIDC. É o que acontece quando você clica "Entrar com Google" ou quando um sistema te redireciona para a tela de login do Keycloak.</p>
+
+      <h3>Quando usar</h3>
+      <ul class="feature-list">
+        <li>Aplicações web com backend (Spring Boot, Node.js, Django)</li>
+        <li>SPAs com PKCE (React, Angular, Vue)</li>
+        <li>Qualquer cenário onde um <strong>humano</strong> precisa logar</li>
+      </ul>
+
+      <h3>Os participantes</h3>
+
+      <div class="participants">
+        <div class="participant">
+          <span class="p-icon">👤</span>
+          <span class="p-label">Usuário</span>
+          <span class="p-desc">Quer acessar a aplicação</span>
+        </div>
+        <div class="participant">
+          <span class="p-icon">🌐</span>
+          <span class="p-label">Browser</span>
+          <span class="p-desc">Faz os redirects</span>
+        </div>
+        <div class="participant">
+          <span class="p-icon">💻</span>
+          <span class="p-label">Aplicação (Client)</span>
+          <span class="p-desc">Quer saber quem é o usuário</span>
+        </div>
+        <div class="participant">
+          <span class="p-icon">🔐</span>
+          <span class="p-label">Keycloak (Auth Server)</span>
+          <span class="p-desc">Autentica e emite tokens</span>
+        </div>
+      </div>
+
+      <h3>O fluxo passo a passo</h3>
+
+      <div class="interactive-box flow-animation">
+        <div class="flow-scene">
+          <div class="flow-step-detail" id="flowStep">
+            <div class="step-visual" id="stepVisual"></div>
+            <div class="step-text" id="stepText"></div>
+            <div class="step-http" id="stepHttp"></div>
+          </div>
+        </div>
+
+        <div class="scene-controls">
+          <button class="btn btn-secondary" id="btnPrev" onclick="prevStep()" disabled>← Anterior</button>
+          <span class="step-indicator" id="stepIndicator">1 / 8</span>
+          <button class="btn" id="btnNext" onclick="nextStep()">Próximo →</button>
+        </div>
+      </div>
+
+      <h3>Por que o "code" intermediário?</h3>
+
+      <p>Você pode se perguntar: por que não devolver o token direto no redirect? Por que esse passo extra do code?</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>❌ Token direto no redirect</h4>
+          <ul>
+            <li>Token aparece na URL do browser</li>
+            <li>Fica no histórico de navegação</li>
+            <li>Pode ser interceptado por extensões</li>
+            <li>Qualquer um que veja a URL tem o token</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>✅ Code + troca no backend</h4>
+          <ul>
+            <li>Code é de uso único e expira em segundos</li>
+            <li>Token é trocado no backend (server-to-server)</li>
+            <li>Token nunca aparece no browser</li>
+            <li>Troca exige client_secret (confidential)</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>E o PKCE?</h3>
+
+      <p><strong>Nota sobre o parâmetro <code>state</code>:</strong> nos passos 2 e 5 você viu um parâmetro <code>state</code>. Ele é uma proteção contra ataques CSRF — a aplicação gera um valor aleatório, envia ao Keycloak, e confere se volta igual. Se alguém tentar injetar um code falso, o state não vai bater.</p>
+
+      <p>Para clients <strong>public</strong> (SPAs, mobile) que não têm client_secret, existe o <strong>PKCE</strong> (Proof Key for Code Exchange). Ele adiciona uma proteção extra:</p>
+
+      <ol class="feature-list">
+        <li>O client gera um <code>code_verifier</code> aleatório</li>
+        <li>Envia o hash dele (<code>code_challenge</code>) junto com o pedido de autorização</li>
+        <li>Na hora de trocar o code por token, envia o <code>code_verifier</code> original</li>
+        <li>O Keycloak confere: o hash bate? Se sim, emite o token</li>
+      </ol>
+
+      <p>Isso garante que mesmo que alguém intercepte o code, não consegue trocá-lo por token sem o code_verifier original.</p>
+
+      <h3>Erros comuns</h3>
+
+      <p>Quando algo dá errado nesse fluxo, o Keycloak retorna um erro. Os mais frequentes:</p>
+
+      <ul class="feature-list">
+        <li><code>invalid_grant</code> — code expirado ou já usado</li>
+        <li><code>invalid_client</code> — client_secret errado</li>
+        <li><code>redirect_uri mismatch</code> — URI no request não bate com a configurada no Keycloak</li>
+        <li><code>unauthorized_client</code> — fluxo não habilitado para esse client</li>
+      </ul>
+
+      <div class="key-takeaway">
+        <h4>💡 Resumo</h4>
+        <p><strong>Authorization Code Flow</strong> = redirect → login no Keycloak → code → troca por token no backend<br>
+        <strong>Com PKCE</strong> = mesma coisa, mas o code_verifier protege a troca (para clients sem secret)<br>
+        <strong>Quando usar</strong> = sempre que um humano precisa logar. É o padrão.</p>
+      </div>
+
+      <section class="lab-section">
+        <h3>🧪 Lab: Authorization Code Flow na prática</h3>
+        <p>Simule o fluxo completo usando seu browser e curl.</p>
+
+        <div class="lab-steps">
+          <div class="lab-step">
+            <span class="lab-step-num">1</span>
+            <div>
+              <strong>Abra esta URL no browser:</strong>
+              <pre><code>http://localhost:8080/realms/authlab/protocol/openid-connect/auth
+  ?response_type=code
+  &amp;client_id=app-teste-confidential
+  &amp;redirect_uri=http://localhost:3000/callback
+  &amp;scope=openid profile email
+  &amp;state=teste123</code></pre>
+              <p>Você será redirecionado para a tela de login do Keycloak.</p>
+            </div>
+          </div>
+          <div class="lab-step">
+            <span class="lab-step-num">2</span>
+            <div>
+              <strong>Faça login com maria/senha123</strong>
+              <p>Após o login, o browser tentará redirecionar para <code>http://localhost:3000/callback?code=XXXXX&amp;state=teste123</code>. Como não temos servidor na 3000, vai dar erro — mas copie o <code>code</code> da URL.</p>
+            </div>
+          </div>
+          <div class="lab-step">
+            <span class="lab-step-num">3</span>
+            <div>
+              <strong>Troque o code por tokens:</strong>
+              <pre><code>curl -X POST http://localhost:8080/realms/authlab/protocol/openid-connect/token \
+  -d "grant_type=authorization_code" \
+  -d "client_id=app-teste-confidential" \
+  -d "client_secret=meu-secret-super-seguro" \
+  -d "redirect_uri=http://localhost:3000/callback" \
+  -d "code=COLE_O_CODE_AQUI"</code></pre>
+            </div>
+          </div>
+          <div class="lab-step">
+            <span class="lab-step-num">4</span>
+            <div>
+              <strong>Tente reusar o code:</strong>
+              <p>Execute o mesmo curl novamente. Resultado: <code>{"error":"invalid_grant"}</code> — o code é de uso único!</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-quiz>
+        <h3>🧠 Teste seu entendimento</h3>
+        <script type="application/json">[
+          {"q": "Por que o Authorization Code Flow usa um code intermediário?", "options": ["Para ser mais lento e seguro", "Para que o token nunca apareça na URL do browser", "Porque o Keycloak exige"], "answer": 1, "explanation": "O code é trocado no backend (server-to-server). O token nunca fica exposto na URL."},
+          {"q": "O PKCE é necessário quando:", "options": ["O client é confidential", "O client é public (SPA/mobile) e não tem secret", "Sempre"], "answer": 1, "explanation": "PKCE protege a troca do code quando não há client_secret para autenticar o client."},
+          {"q": "O parâmetro state protege contra:", "options": ["Token expirado", "Ataques CSRF", "Senhas fracas"], "answer": 1, "explanation": "O state é um valor aleatório que previne que um atacante injete um code falso no callback."}
+        ]</script>
+      </section>
+
+      <nav class="module-nav">
+        <a href="index.html">← Trilha 3</a>
+        <a href="02-client-credentials.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    const steps = [
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">👤🌐</span><span class="flow-arrow-badge arrow-right">clica Entrar</span><span class="flow-actor-badge">💻</span></div>',
+        text: '<strong>1. Usuário clica "Entrar"</strong><br>O usuário acessa a aplicação e clica no botão de login.',
+        http: ''
+      },
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">💻</span><span class="flow-arrow-badge arrow-right">redirect 302</span><span class="flow-actor-badge">👤🌐</span></div>',
+        text: '<strong>2. Aplicação redireciona para o Keycloak</strong><br>A aplicação não tem tela de login própria. Ela manda o browser para o Keycloak.',
+        http: '<code>302 Redirect</code><br><code>Location: https://keycloak/realms/meu-realm/protocol/openid-connect/auth?<br>&nbsp;&nbsp;response_type=code<br>&nbsp;&nbsp;&client_id=minha-app<br>&nbsp;&nbsp;&redirect_uri=https://app/callback<br>&nbsp;&nbsp;&scope=openid profile email</code>'
+      },
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">👤🌐</span><span class="flow-arrow-badge arrow-right">GET /auth</span><span class="flow-actor-badge">🔐</span></div>',
+        text: '<strong>3. Browser vai para o Keycloak</strong><br>O browser segue o redirect e chega na tela de login do Keycloak.',
+        http: '<code>GET /auth?response_type=code&client_id=minha-app&...</code>'
+      },
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">👤</span><span class="flow-arrow-badge arrow-right">login</span><span class="flow-actor-badge">🔐</span></div>',
+        text: '<strong>4. Usuário faz login</strong><br>O usuário digita suas credenciais na tela do Keycloak. A aplicação nunca vê a senha.',
+        http: '<code>POST /login<br>username=maria&password=******</code>'
+      },
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">🔐</span><span class="flow-arrow-badge arrow-right">redirect + code</span><span class="flow-actor-badge">👤🌐</span></div>',
+        text: '<strong>5. Keycloak redireciona de volta com um code</strong><br>Login OK. O Keycloak manda o browser de volta para a aplicação com um código temporário.',
+        http: '<code>302 Redirect</code><br><code>Location: https://app/callback?<br>&nbsp;&nbsp;code=abc123<br>&nbsp;&nbsp;&state=xyz</code>'
+      },
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">💻</span><span class="flow-arrow-badge arrow-right">code + secret</span><span class="flow-actor-badge">🔐</span></div>',
+        text: '<strong>6. Aplicação troca o code por token</strong><br>O backend da aplicação faz uma chamada direta ao Keycloak (server-to-server, sem browser).',
+        http: '<code>POST /token<br>grant_type=authorization_code<br>code=abc123<br>client_id=minha-app<br>client_secret=meu-secret<br>redirect_uri=https://app/callback</code>'
+      },
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">🔐</span><span class="flow-arrow-badge arrow-right">tokens</span><span class="flow-actor-badge">💻</span></div>',
+        text: '<strong>7. Keycloak retorna os tokens</strong><br>O Keycloak valida o code e o secret, e emite os tokens.',
+        http: '<code>200 OK<br>{<br>&nbsp;&nbsp;"access_token": "eyJhbG...",<br>&nbsp;&nbsp;"id_token": "eyJhbG...",<br>&nbsp;&nbsp;"refresh_token": "eyJhbG...",<br>&nbsp;&nbsp;"expires_in": 300<br>}</code>'
+      },
+      {
+        visual: '<div class="flow-visual-row"><span class="flow-actor-badge">💻</span><span class="flow-arrow-badge arrow-right">sessão criada</span><span class="flow-actor-badge">👤🌐</span></div>',
+        text: '<strong>8. Usuário está logado</strong><br>A aplicação cria uma sessão para o usuário. O login está completo. O token fica no backend, seguro.',
+        http: '<code>Set-Cookie: session=xyz; HttpOnly; Secure</code>'
+      }
+    ];
+
+    let currentStep = 0;
+
+    function renderStep() {
+      const step = steps[currentStep];
+      document.getElementById('stepVisual').innerHTML = step.visual;
+      document.getElementById('stepText').innerHTML = step.text;
+      document.getElementById('stepHttp').innerHTML = step.http ? `<div class="http-block">${step.http}</div>` : '';
+      document.getElementById('stepIndicator').textContent = `${currentStep + 1} / ${steps.length}`;
+      document.getElementById('btnPrev').disabled = currentStep === 0;
+      document.getElementById('btnNext').disabled = currentStep === steps.length - 1;
+    }
+
+    function nextStep() {
+      if (currentStep < steps.length - 1) { currentStep++; renderStep(); }
+    }
+
+    function prevStep() {
+      if (currentStep > 0) { currentStep--; renderStep(); }
+    }
+
+    document.addEventListener('DOMContentLoaded', renderStep);
+  </script>
+  <style>
+    .participants { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin: 20px 0; }
+    .participant { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+    .p-icon { display: block; font-size: 1.5rem; margin-bottom: 4px; }
+    .p-label { display: block; font-weight: 600; font-size: 0.85rem; }
+    .p-desc { display: block; font-size: 0.75rem; color: var(--text-secondary); }
+
+    .flow-animation { padding: 24px; }
+    .flow-actors { display: flex; justify-content: space-between; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+    .flow-step-detail { height: 400px; overflow-y: auto; }
+    .actor { text-align: center; }
+    .actor-icon { font-size: 1.5rem; }
+    .actor-name { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; }
+
+    .flow-step-detail { min-height: 180px; }
+    .flow-visual-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .flow-actor-badge { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 1.2rem; text-align: center; min-width: 50px; }
+    .flow-arrow-badge { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; font-size: 0.85rem; font-family: var(--font-display); font-weight: 500; color: var(--text-secondary); white-space: nowrap; transition: all 0.2s ease; }
+    .flow-arrow-badge:hover { border-color: var(--accent); background: var(--accent-glow); }
+    .flow-arrow-badge.arrow-right::after { content: ' →'; color: var(--accent); font-size: 1.3rem; font-weight: 700; }
+    .flow-arrow-badge.arrow-left::before { content: '← '; color: var(--accent); font-size: 1.3rem; font-weight: 700; }
+    .step-text { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; }
+    .step-text strong { color: var(--text-primary); }
+
+    .http-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; font-family: var(--mono); font-size: 0.88rem; color: var(--text-primary); line-height: 1.7; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+    .http-block code { background: none; padding: 0; font-size: inherit; border: none; }
+
+    .scene-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .step-indicator { font-size: 0.85rem; color: var(--text-secondary); min-width: 40px; text-align: center; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .feature-list { padding-left: 20px; margin: 16px 0; }
+    .feature-list li { padding: 4px 0; color: var(--text-secondary); font-size: 0.9rem; }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .scene-controls .btn { padding: 8px 12px; font-size: 0.75rem; }
+      .flow-step-detail { min-height: auto; }
+      .participants { grid-template-columns: 1fr 1fr; }
+      .http-block { font-size: 0.8rem; }
+
+    }
+  </style>
+</body>
+</html>

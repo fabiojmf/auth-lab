@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuração de um Client | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">04 — Clients na Prática</a> → <span>Configuração de um Client</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Configuração de um Client</h2>
+
+      <p>Ao criar um client no Keycloak, você encontra vários campos. Cada um tem um propósito específico. Clique em qualquer campo abaixo para ver a explicação detalhada.</p>
+
+      <div class="interactive-box">
+        <div class="field-list">
+          <button class="field-item active" onclick="showField('clientId')">Client ID</button>
+          <button class="field-item" onclick="showField('clientAuth')">Client authentication</button>
+          <button class="field-item" onclick="showField('standardFlow')">Standard Flow</button>
+          <button class="field-item" onclick="showField('directGrant')">Direct Access Grants</button>
+          <button class="field-item" onclick="showField('serviceAccount')">Service accounts</button>
+          <button class="field-item" onclick="showField('rootUrl')">Root URL</button>
+          <button class="field-item" onclick="showField('redirectUris')">Valid Redirect URIs</button>
+          <button class="field-item" onclick="showField('webOrigins')">Web Origins</button>
+          <button class="field-item" onclick="showField('flowOverrides')">Authentication Flow Overrides</button>
+        </div>
+
+        <div class="field-detail" id="fieldDetail">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <h3>Tabela de referência rápida</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>O que faz</th>
+              <th>Valor típico</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Client ID</td>
+              <td>Identificador único do client</td>
+              <td><code>minha-app-backend</code></td>
+            </tr>
+            <tr>
+              <td>Client authentication</td>
+              <td>On = confidential, Off = public</td>
+              <td>On (backend) / Off (SPA)</td>
+            </tr>
+            <tr>
+              <td>Standard Flow</td>
+              <td>Habilita Authorization Code Flow</td>
+              <td>On (se tem login humano)</td>
+            </tr>
+            <tr>
+              <td>Direct Access Grants</td>
+              <td>Habilita Resource Owner Password</td>
+              <td>Off (exceto CLI/legado)</td>
+            </tr>
+            <tr>
+              <td>Service accounts</td>
+              <td>Habilita Client Credentials</td>
+              <td>On (se máquina-a-máquina)</td>
+            </tr>
+            <tr>
+              <td>Root URL</td>
+              <td>Base para URLs relativas</td>
+              <td><code>https://app.com</code></td>
+            </tr>
+            <tr>
+              <td>Valid Redirect URIs</td>
+              <td>URIs permitidas para redirect após login</td>
+              <td><code>https://app.com/callback</code></td>
+            </tr>
+            <tr>
+              <td>Web Origins</td>
+              <td>Origens permitidas para CORS</td>
+              <td><code>+</code> (usa redirect URIs)</td>
+            </tr>
+            <tr>
+              <td>Flow Overrides</td>
+              <td>Usa um flow de autenticação diferente</td>
+              <td>(vazio = usa o padrão do realm)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Dicas importantes</h4>
+        <p><strong>Redirect URIs:</strong> nunca use <code>*</code> em produção. Seja o mais específico possível.<br>
+        <strong>Web Origins:</strong> use <code>+</code> para derivar automaticamente das redirect URIs.<br>
+        <strong>Direct Access Grants:</strong> desabilite a menos que realmente precise (é menos seguro).<br>
+        <strong>Service accounts:</strong> só funciona com Client authentication: On.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="01-confidential-vs-public.html">← Módulo anterior</a>
+        <a href="03-scopes-mappers.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    const fields = {
+      clientId: {
+        title: 'Client ID',
+        icon: '🏷️',
+        desc: 'O identificador único do client dentro do realm. É o valor que vai no parâmetro <code>client_id</code> das requisições OAuth2.',
+        details: [
+          'Não é um segredo — aparece em URLs e tokens',
+          'Deve ser único dentro do realm',
+          'Convenção: usar kebab-case (ex: minha-app-backend)',
+          'Pode ser alterado, mas com cuidado — todas as aplicações que referenciam o client_id precisarão ser atualizadas.'
+        ],
+        example: 'client_id=minha-app-backend'
+      },
+      clientAuth: {
+        title: 'Client authentication',
+        icon: '🔐',
+        desc: 'Define se o client é <strong>confidential</strong> (On) ou <strong>public</strong> (Off). Quando On, o Keycloak gera um <code>client_secret</code> na aba Credentials.',
+        details: [
+          '<strong>On:</strong> o client precisa enviar o secret para trocar tokens',
+          '<strong>Off:</strong> o client não tem secret (usa PKCE para segurança)',
+          'Mudar de On para Off remove o secret existente',
+          'Equivale ao antigo "Access Type: confidential/public"'
+        ],
+        example: 'Client authentication: On → gera secret na aba Credentials'
+      },
+      standardFlow: {
+        title: 'Standard Flow (Authorization Code)',
+        icon: '🔄',
+        desc: 'Habilita o <strong>Authorization Code Flow</strong>. É o fluxo padrão para login de usuários via redirect para o Keycloak.',
+        details: [
+          'Habilite quando um humano precisa fazer login',
+          'Requer Valid Redirect URIs configuradas',
+          'Funciona com clients confidential e public',
+          'Com public, usa PKCE automaticamente'
+        ],
+        example: 'Standard Flow Enabled: On'
+      },
+      directGrant: {
+        title: 'Direct Access Grants',
+        icon: '⚡',
+        desc: 'Habilita o <strong>Resource Owner Password Credentials</strong> grant. A aplicação recebe username/password diretamente e troca por token.',
+        details: [
+          '⚠️ Menos seguro: a aplicação vê a senha do usuário',
+          'Use apenas para: CLIs, ferramentas de dev, sistemas legados',
+          'Não suporta MFA interativo (telas de OTP no browser). Suporta OTP via parâmetro totp no request, mas é frágil.',
+          'Desabilite em produção se não for necessário'
+        ],
+        example: 'grant_type=password&username=maria&password=***'
+      },
+      serviceAccount: {
+        title: 'Service accounts enabled',
+        icon: '🤖',
+        desc: 'Habilita o <strong>Client Credentials</strong> grant. O client se autentica como ele mesmo, sem usuário humano.',
+        details: [
+          'Requer Client authentication: On (confidential)',
+          'Cria um "usuário" interno: service-account-{clientId}',
+          'Você pode atribuir roles a esse usuário na aba Service Account Roles',
+          'Ideal para microserviços, jobs, integrações'
+        ],
+        example: 'grant_type=client_credentials&client_id=x&client_secret=y'
+      },
+      rootUrl: {
+        title: 'Root URL',
+        icon: '🌍',
+        desc: 'URL base da aplicação. Usada como prefixo para URLs relativas em Redirect URIs e Web Origins.',
+        details: [
+          'Se Root URL = https://app.com e Redirect URI = /callback → resolve para https://app.com/callback',
+          'Também usada em links de email (verificação, reset de senha)',
+          'Usada por identity providers federados',
+          'Pode ficar vazia se você usar URLs absolutas em tudo'
+        ],
+        example: 'Root URL: https://app.com'
+      },
+      redirectUris: {
+        title: 'Valid Redirect URIs',
+        icon: '↩️',
+        desc: 'Lista de URIs para onde o Keycloak pode redirecionar após o login. Se a URI do request não estiver nesta lista, o login falha com <code>invalid_redirect_uri</code>.',
+        details: [
+          '<strong>Wildcard *:</strong> permitido apenas no final do path (ex: https://app.com/*)',
+          'Wildcard NÃO é permitido no hostname (ex: https://*.app.com ❌)',
+          'Em dev: http://localhost:3000/* é aceitável',
+          'Em produção: seja o mais específico possível',
+          'Múltiplas URIs: uma por linha'
+        ],
+        example: 'https://app.com/callback\nhttps://app.com/silent-renew'
+      },
+      webOrigins: {
+        title: 'Web Origins (CORS)',
+        icon: '🌐',
+        desc: 'Origens permitidas para requisições CORS ao Keycloak (ex: token endpoint, userinfo). Se não configurado, o browser bloqueia as chamadas.',
+        details: [
+          '<strong>+</strong> (sinal de mais): deriva automaticamente das Valid Redirect URIs',
+          '<strong>*</strong>: permite qualquer origem (⚠️ não use em produção)',
+          'Formato: scheme + host + port (ex: https://app.com)',
+          'Necessário para SPAs que chamam o token endpoint direto do browser',
+          'Não é necessário para backends (chamadas server-to-server não têm CORS)'
+        ],
+        example: 'Web Origins: + (recomendado)'
+      },
+      flowOverrides: {
+        title: 'Authentication Flow Overrides',
+        icon: '🔀',
+        desc: 'Permite usar um flow de autenticação diferente do padrão do realm para este client específico.',
+        details: [
+          'Por padrão, todos os clients usam o "Browser Flow" do realm',
+          'Útil para: exigir MFA apenas para um client específico',
+          'Útil para: usar um flow customizado (ex: login com certificado)',
+          'Browser Flow: override do fluxo de login via browser',
+          'Direct Grant Flow: override do fluxo de password grant'
+        ],
+        example: 'Browser Flow: meu-flow-com-mfa'
+      },
+      postLogoutRedirect: {
+        title: 'Valid Post Logout Redirect URIs',
+        icon: '🚪',
+        desc: 'Para onde o usuário é redirecionado após logout. Sem isso, o logout redireciona para uma página de erro. Aceita <code>+</code> para usar as mesmas Redirect URIs.',
+        details: [
+          'Configurado na aba Settings do client',
+          'Aceita os mesmos padrões de wildcard das Redirect URIs',
+          'Use + para derivar automaticamente das Valid Redirect URIs',
+          'Sem configuração, o logout mostra uma página genérica do Keycloak'
+        ],
+        example: 'https://app.com/logged-out'
+      },
+      backchannelLogout: {
+        title: 'Backchannel Logout URL',
+        icon: '📡',
+        desc: 'URL que o Keycloak chama quando o usuário faz logout em outro sistema. Permite single logout distribuído (o Keycloak avisa todos os sistemas conectados).',
+        details: [
+          'O Keycloak envia um POST com um Logout Token (JWT) para esta URL',
+          'Permite que todos os sistemas conectados invalidem a sessão do usuário',
+          'A URL deve ser acessível pelo Keycloak (server-to-server)',
+          'Faz parte do padrão OpenID Connect Back-Channel Logout'
+        ],
+        example: 'https://app.com/api/backchannel-logout'
+      }
+    };
+
+    function showField(key) {
+      const f = fields[key];
+      document.querySelectorAll('.field-item').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('fieldDetail').innerHTML = `
+        <div class="fd-header"><span class="fd-icon">${f.icon}</span><h4>${f.title}</h4></div>
+        <p class="fd-desc">${f.desc}</p>
+        <ul class="fd-details">${f.details.map(d => `<li>${d}</li>`).join('')}</ul>
+        <div class="fd-example"><strong>Exemplo:</strong> <code>${f.example}</code></div>
+      `;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => showField('clientId'));
+  </script>
+  <style>
+    .field-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .field-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 0.8rem; cursor: pointer; color: var(--text-secondary); font-family: inherit; transition: all var(--transition); }
+    .field-item.active { border-color: var(--accent); color: var(--accent); background: rgba(41, 151, 255, 0.05); }
+    .field-item:hover { border-color: var(--accent); }
+
+    .field-detail { min-height: 200px; }
+    .fd-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .fd-icon { font-size: 1.3rem; }
+    .fd-header h4 { font-family: var(--font-display); margin: 0; }
+    .fd-desc { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px; }
+    .fd-details { padding-left: 20px; margin: 12px 0; }
+    .fd-details li { font-size: 0.85rem; color: var(--text-secondary); padding: 4px 0; }
+    .fd-example { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px; }
+    .fd-example code { font-size: 0.8rem; white-space: pre-wrap; }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .info-table thead, .info-table tbody, .info-table tr { display: table; width: 100%; table-layout: fixed; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); word-wrap: break-word; }
+    .info-table tr:last-child td { border-bottom: none; }
+
+    h3 { font-family: var(--font-display); }
+
+    @media (max-width: 640px) {
+      .field-list { gap: 6px; }
+      .field-item { font-size: 0.7rem; padding: 6px 10px; }
+      .info-table { font-size: 0.7rem; display: block; overflow-x: auto; }
+      .info-table thead, .info-table tbody, .info-table tr { display: table; width: 100%; }
+    }
+  </style>
+</body>
+</html>

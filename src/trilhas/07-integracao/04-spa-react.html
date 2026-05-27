@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPA (React) | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">07 — Integração</a> → <span>SPA (React)</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>SPA (React)</h2>
+
+      <p>Uma Single Page Application roda inteiramente no browser — não pode guardar secrets. A solução é usar um <strong>public client</strong> com Authorization Code + PKCE.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">⚛️</span>
+        <h3>O desafio do SPA</h3>
+        <p>Código no browser é visível para qualquer um. Não existe client_secret seguro. PKCE resolve isso sem precisar de secret.</p>
+      </div>
+
+      <h3>Setup com react-oidc-context</h3>
+
+      <p>A biblioteca <code>react-oidc-context</code> é um wrapper React sobre <code>oidc-client-ts</code>:</p>
+
+      <pre class="code-block">import { AuthProvider } from 'react-oidc-context';
+
+const oidcConfig = {
+  authority: 'https://keycloak/realms/meu-realm',
+  client_id: 'minha-spa',
+  redirect_uri: 'http://localhost:3000/callback',
+  post_logout_redirect_uri: 'http://localhost:3000/',
+  scope: 'openid profile email',
+  // response_type defaults to 'code' (Authorization Code + PKCE)
+};
+
+function Root() {
+  return (
+    &lt;AuthProvider {...oidcConfig}&gt;
+      &lt;App /&gt;
+    &lt;/AuthProvider&gt;
+  );
+}</pre>
+
+      <h3>Usando Auth nos Componentes</h3>
+
+      <pre class="code-block">import { useAuth } from 'react-oidc-context';
+
+function Profile() {
+  const auth = useAuth();
+
+  if (auth.isLoading) return &lt;div&gt;Carregando...&lt;/div&gt;;
+
+  if (!auth.isAuthenticated) {
+    return &lt;button onClick={() =&gt; auth.signinRedirect()}&gt;Login&lt;/button&gt;;
+  }
+
+  return (
+    &lt;div&gt;
+      &lt;p&gt;Olá, {auth.user.profile.name}&lt;/p&gt;
+      &lt;p&gt;Email: {auth.user.profile.email}&lt;/p&gt;
+      &lt;button onClick={() =&gt; auth.signoutRedirect()}&gt;Logout&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</pre>
+
+      <h3>Chamando APIs Protegidas</h3>
+
+      <pre class="code-block">function Dashboard() {
+  const auth = useAuth();
+  const [data, setData] = useState(null);
+
+  useEffect(() =&gt; {
+    if (auth.isAuthenticated) {
+      fetch('/api/data', {
+        headers: {
+          Authorization: `Bearer ${auth.user.access_token}`
+        }
+      })
+        .then(res =&gt; res.json())
+        .then(setData);
+    }
+  }, [auth.isAuthenticated]);
+
+  return &lt;div&gt;{JSON.stringify(data)}&lt;/div&gt;;
+}</pre>
+
+      <h3>Silent Refresh</h3>
+
+      <p>Tokens expiram. O silent refresh renova automaticamente sem redirecionar o usuário:</p>
+
+      <pre class="code-block">const oidcConfig = {
+  // ...config anterior
+  automaticSilentRenew: true,
+  // Opção 1: via iframe (usa session cookie do Keycloak)
+  silent_redirect_uri: 'http://localhost:3000/silent-renew.html',
+  // Opção 2: via refresh token (se habilitado no client)
+};</pre>
+
+      <h3>Segurança no Browser</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>✅ Boas práticas</h4>
+          <div class="comp-field">Token em memória (variável JS)</div>
+          <div class="comp-field">PKCE obrigatório</div>
+          <div class="comp-field">Validar state parameter</div>
+          <div class="comp-field">CSP headers contra XSS</div>
+          <div class="comp-field">Considerar BFF para apps sensíveis</div>
+        </div>
+        <div class="comparison-side">
+          <h4>❌ Evitar</h4>
+          <div class="comp-field">Token em localStorage (acessível via XSS)</div>
+          <div class="comp-field">Token em sessionStorage (mesmo risco)</div>
+          <div class="comp-field">Implicit flow (deprecated, inseguro)</div>
+          <div class="comp-field">Ignorar expiração do token</div>
+          <div class="comp-field">Client secret no código frontend</div>
+        </div>
+      </div>
+
+      <h3>Padrão BFF (Backend for Frontend)</h3>
+
+      <p>Para aplicações de alta segurança, o BFF mantém tokens no backend e usa cookies httpOnly com o frontend:</p>
+
+      <pre class="code-block">┌─────────┐     cookie      ┌─────────┐     token      ┌──────────┐
+│  React  │ ──────────────→ │   BFF   │ ──────────────→ │   API    │
+│  (SPA)  │ ←────────────── │ (proxy) │ ←────────────── │ (Resource│
+└─────────┘   httpOnly       └─────────┘   Bearer JWT    │  Server) │
+                                                          └──────────┘</pre>
+
+      <p>O SPA nunca vê o token — elimina risco de XSS roubar credenciais.</p>
+
+      <h3>Angular (alternativa)</h3>
+
+      <p>Mesmos conceitos, biblioteca diferente: <code>angular-auth-oidc-client</code>. Configuração similar, usa módulos Angular em vez de hooks React.</p>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>SPA = public client + Authorization Code + PKCE. Tokens em memória, nunca em localStorage. Para apps de alta segurança, considere o padrão BFF.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="03-nodejs.html">← Node.js</a>
+        <a href="05-resource-server.html">Resource Server →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+    }
+  </style>
+</body>
+</html>

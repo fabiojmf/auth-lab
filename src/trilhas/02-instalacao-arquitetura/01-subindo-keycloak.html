@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subindo o Keycloak | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">02 — Instalação e Arquitetura</a> → <span>Subindo o Keycloak</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Subindo o Keycloak</h2>
+
+      <p>Chega de teoria. Neste módulo você vai colocar um Keycloak real para rodar na sua máquina — em menos de 5 minutos.</p>
+
+      <h3>Pré-requisitos</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>🐳 Docker</h4>
+          <ul>
+            <li>Docker Engine 20.10+</li>
+            <li><a href="https://docs.docker.com/get-docker/" target="_blank" style="color: var(--accent);">Instalar Docker</a></li>
+            <li>Verifique: <code>docker --version</code></li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>🧩 Docker Compose</h4>
+          <ul>
+            <li>Compose V2 (integrado ao Docker)</li>
+            <li><a href="https://docs.docker.com/compose/install/" target="_blank" style="color: var(--accent);">Instalar Compose</a></li>
+            <li>Verifique: <code>docker compose version</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>O Docker Compose</h3>
+
+      <p>O AuthLab já vem com um <code>docker-compose.yml</code> pronto. Ele sobe dois containers:</p>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr><th>Serviço</th><th>Imagem</th><th>Porta</th><th>Função</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>keycloak</strong></td><td>quay.io/keycloak/keycloak:26.2.6</td><td>8080</td><td>Servidor de identidade</td></tr>
+            <tr><td><strong>postgres</strong></td><td>postgres:18.4-alpine</td><td>5432</td><td>Banco de dados</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>O arquivo completo (<code>docker/docker-compose.yml</code>):</p>
+
+      <pre><code>services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2.6
+    command: start-dev --import-realm
+    ports:
+      - "8080:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+    volumes:
+      - ./realm-export:/opt/keycloak/data/import
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18.4-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:</code></pre>
+
+      <p>Pontos importantes:</p>
+      <ul style="color: var(--text-secondary); padding-left: 20px; margin-bottom: 16px;">
+        <li><code>start-dev</code> — modo desenvolvimento (sem HTTPS obrigatório)</li>
+        <li><code>--import-realm</code> — importa configurações prontas ao iniciar</li>
+        <li><code>depends_on + healthcheck</code> — Keycloak só sobe quando o Postgres estiver pronto</li>
+        <li><code>KEYCLOAK_ADMIN</code> — cria o usuário admin no primeiro boot</li>
+      </ul>
+
+      <h3>Passo a passo</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <strong>Crie uma pasta e o arquivo</strong>
+            <pre><code>mkdir keycloak-lab && cd keycloak-lab</code></pre>
+            <p>Crie um arquivo <code>docker-compose.yml</code> nessa pasta com o conteúdo mostrado acima.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <strong>Suba os containers</strong>
+            <pre><code>docker compose up -d</code></pre>
+            <p>O <code>-d</code> roda em background. Primeira vez demora mais (download das imagens).</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <strong>Acompanhe os logs</strong>
+            <pre><code>docker compose logs -f keycloak</code></pre>
+            <p>Espere até ver: <code>Keycloak ... started in Xs</code>. Ctrl+C para sair dos logs.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">4</span>
+          <div class="step-content">
+            <strong>Acesse o console</strong>
+            <p>Abra no navegador: <a href="http://localhost:8080" target="_blank">http://localhost:8080</a></p>
+            <p>Clique em "Administration Console".</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">5</span>
+          <div class="step-content">
+            <strong>Faça login</strong>
+            <p>Usuário: <code>admin</code> &nbsp;|&nbsp; Senha: <code>admin</code></p>
+            <p>Pronto! Você está no Admin Console.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>O que você está vendo</h3>
+
+      <p>O Admin Console é, ele mesmo, um <strong>client</strong> do Keycloak — uma aplicação web (React) que se autentica via OpenID Connect no próprio servidor. Tudo que você faz nele é uma chamada à Admin REST API.</p>
+
+      <p>Isso significa: tudo que o console faz, você pode fazer via API. O console é só uma interface gráfica.</p>
+
+      <h3>Troubleshooting</h3>
+
+      <div class="interactive-box">
+        <div class="troubleshoot-item" onclick="toggleTroubleshoot(this)">
+          <h4>⚠️ Porta 8080 já em uso <span class="expand-icon">+</span></h4>
+          <div class="troubleshoot-content">
+            <p>Outro serviço está usando a porta. Edite o <code>docker-compose.yml</code>:</p>
+            <pre><code>ports:
+  - "8180:8080"  # acesse em localhost:8180</code></pre>
+          </div>
+        </div>
+        <div class="troubleshoot-item" onclick="toggleTroubleshoot(this)">
+          <h4>⚠️ Container reiniciando em loop <span class="expand-icon">+</span></h4>
+          <div class="troubleshoot-content">
+            <p>Geralmente é problema de conexão com o banco. Verifique:</p>
+            <pre><code>docker compose logs postgres
+docker compose ps</code></pre>
+            <p>Se o Postgres não está healthy: <code>docker compose down -v &amp;&amp; docker compose up -d</code></p>
+          </div>
+        </div>
+        <div class="troubleshoot-item" onclick="toggleTroubleshoot(this)">
+          <h4>⚠️ Startup muito lento <span class="expand-icon">+</span></h4>
+          <div class="troubleshoot-content">
+            <p>Normal na primeira execução! O Keycloak cria todo o schema do banco (dezenas de tabelas). Pode levar 30-60s. Nas próximas vezes será instantâneo.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Checklist de verificação</h3>
+
+      <div class="interactive-box">
+        <div class="checklist" id="checklist">
+          <label class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span>Docker instalado e funcionando</span></label>
+          <label class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span>Docker Compose disponível</span></label>
+          <label class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><code>docker compose up -d</code> executado com sucesso</span></label>
+          <label class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span>Keycloak acessível em localhost:8080</span></label>
+          <label class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span>Login admin/admin funcionando</span></label>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <p class="progress-text" id="progressText">0 de 5 completos</p>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>Você agora tem um Keycloak de verdade rodando localmente — a mesma versão usada em produção. Tudo daqui pra frente é prática.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="index.html">← Trilha 2</a>
+        <a href="02-realms.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    function toggleTroubleshoot(el) { el.classList.toggle('open'); }
+    function updateProgress() {
+      const checks = document.querySelectorAll('#checklist input[type="checkbox"]');
+      const done = [...checks].filter(c => c.checked).length;
+      document.getElementById('progressFill').style.width = `${(done / checks.length) * 100}%`;
+      document.getElementById('progressText').textContent = `${done} de ${checks.length} completos`;
+    }
+  </script>
+  <style>
+    .steps-list { margin: 24px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .step-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .step-num { background: var(--accent); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; flex-shrink: 0; font-family: var(--font-display); }
+    .step-content { flex: 1; }
+    .step-content strong { display: block; margin-bottom: 8px; font-family: var(--font-display); font-size: 1rem; }
+    .step-content p { font-size: 0.9rem; color: var(--text-secondary); margin: 6px 0 0; }
+    .step-content pre { margin: 8px 0; }
+    .setup-step h4 { font-family: var(--font-display); margin-bottom: 8px; }
+    .setup-step p { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px; }
+    .scene-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .step-indicator { font-size: 0.85rem; color: var(--text-secondary); min-width: 40px; text-align: center; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .troubleshoot-item { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 8px; cursor: pointer; transition: background var(--transition); }
+    .troubleshoot-item:hover { background: var(--bg-card); }
+    .troubleshoot-item h4 { font-family: var(--font-display); font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; }
+    .troubleshoot-content { display: none; margin-top: 12px; }
+    .troubleshoot-content p { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; }
+    .troubleshoot-item.open .troubleshoot-content { display: block; }
+    .troubleshoot-item.open .expand-icon { transform: rotate(45deg); }
+    .expand-icon { transition: transform 0.2s; font-weight: 700; }
+    .checklist { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+    .checklist-item { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer; }
+    .checklist-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+    .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+    .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; width: 0; transition: width 0.3s ease; }
+    .progress-text { font-size: 0.8rem; color: var(--text-secondary); text-align: center; }
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .info-table tr:last-child td { border-bottom: none; }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .info-table { font-size: 0.7rem; }
+      .scene-controls .btn { padding: 8px 12px; font-size: 0.75rem; }
+    }
+  </style>
+</body>
+</html>

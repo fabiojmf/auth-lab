@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapeamento e Fluxo de Identidade | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">05 — Usuários e Identidade</a> → <span>Mapeamento e Fluxo de Identidade</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Mapeamento e Fluxo de Identidade</h2>
+
+      <p>A identidade no Keycloak é construída em camadas. Independente de onde o usuário vem (local, LDAP ou IDP externo), os dados passam por transformações até se tornarem claims no token final. Entender esse fluxo é essencial para configurar corretamente.</p>
+
+      <h3>O ciclo de vida da identidade</h3>
+
+      <div class="interactive-box">
+        <div class="lifecycle-flow">
+          <div class="lc-step">
+            <span class="lc-icon">🚪</span>
+            <strong>Origem</strong>
+            <p>Usuário chega (local, federado ou via IDP)</p>
+          </div>
+          <div class="lc-arrow">→</div>
+          <div class="lc-step">
+            <span class="lc-icon">🔄</span>
+            <strong>Mapeamento</strong>
+            <p>Atributos são mapeados e transformados</p>
+          </div>
+          <div class="lc-arrow">→</div>
+          <div class="lc-step">
+            <span class="lc-icon">🛡️</span>
+            <strong>Roles</strong>
+            <p>Roles atribuídas (direta, grupo ou mapper)</p>
+          </div>
+          <div class="lc-arrow">→</div>
+          <div class="lc-step">
+            <span class="lc-icon">🎫</span>
+            <strong>Token</strong>
+            <p>Token construído com a identidade final</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Fluxo de atributos por origem</h3>
+
+      <p>Cada tipo de origem tem um caminho diferente até o token:</p>
+
+      <div class="interactive-box">
+        <div class="toggle-tabs">
+          <button class="tab active" onclick="showOrigin('ldap')">📂 LDAP</button>
+          <button class="tab" onclick="showOrigin('idp')">🔀 IDP Externo</button>
+          <button class="tab" onclick="showOrigin('local')">👤 Local</button>
+        </div>
+
+        <div class="origin active" id="origin-ldap">
+          <div class="attr-flow-diagram">
+            <div class="afd-step">
+              <code>mail</code>
+              <small>Atributo LDAP</small>
+            </div>
+            <div class="afd-arrow">
+              <span>LDAP Mapper</span>
+              →
+            </div>
+            <div class="afd-step">
+              <code>email</code>
+              <small>User Attribute (KC)</small>
+            </div>
+            <div class="afd-arrow">
+              <span>Protocol Mapper</span>
+              →
+            </div>
+            <div class="afd-step">
+              <code>email</code>
+              <small>Claim no Token</small>
+            </div>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">LDAP Mapper (user-attribute-ldap-mapper) roda na sincronização/login. Protocol Mapper roda na geração do token.</p>
+        </div>
+
+        <div class="origin" id="origin-idp">
+          <div class="attr-flow-diagram">
+            <div class="afd-step">
+              <code>preferred_username</code>
+              <small>Claim do IDP</small>
+            </div>
+            <div class="afd-arrow">
+              <span>IDP Mapper</span>
+              →
+            </div>
+            <div class="afd-step">
+              <code>username</code>
+              <small>User Attribute (KC)</small>
+            </div>
+            <div class="afd-arrow">
+              <span>Protocol Mapper</span>
+              →
+            </div>
+            <div class="afd-step">
+              <code>preferred_username</code>
+              <small>Claim no Token</small>
+            </div>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">IDP Mapper roda no login via IDP (First Login Flow ou logins subsequentes). Protocol Mapper roda na geração do token.</p>
+        </div>
+
+        <div class="origin" id="origin-local">
+          <div class="attr-flow-diagram">
+            <div class="afd-step">
+              <code>cpf = 123.456.789-00</code>
+              <small>User Attribute (KC)</small>
+            </div>
+            <div class="afd-arrow">
+              <span>Protocol Mapper</span>
+              →
+            </div>
+            <div class="afd-step">
+              <code>"cpf": "123.456.789-00"</code>
+              <small>Claim no Token</small>
+            </div>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">Usuários locais não precisam de mapper de origem — o atributo já está no KC. Só precisa do Protocol Mapper para incluir no token.</p>
+        </div>
+      </div>
+
+      <h3>IDP Mappers vs Protocol Mappers — são coisas diferentes!</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>🔀 IDP Mapper</h4>
+          <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Dados ENTRAM no Keycloak</p>
+          <ul>
+            <li>Roda quando usuário loga via IDP externo</li>
+            <li>Transforma claims do IDP → atributos do KC</li>
+            <li>Configurado em: Identity Providers → Mappers</li>
+            <li>Ex: claim "department" do Google → attr "departamento" no KC</li>
+            <li>Executa: no login (First Login + logins subsequentes)</li>
+            <li><strong>Sync Mode</strong>: INHERIT, IMPORT (só no primeiro login), LEGACY ou FORCE (sempre sobrescreve)</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>🎫 Protocol Mapper</h4>
+          <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Dados SAEM do Keycloak</p>
+          <ul>
+            <li>Roda quando o token é gerado</li>
+            <li>Transforma dados do KC → claims no token</li>
+            <li>Configurado em: Client Scopes → Mappers</li>
+            <li>Ex: attr "cpf" do KC → claim "cpf" no access_token</li>
+            <li>Executa: a cada emissão/refresh de token</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>First Login Flow — em profundidade</h3>
+
+      <p>O First Login Flow é uma sequência de passos executados quando um usuário de IDP externo faz login pela primeira vez. Cada passo é um <strong>authenticator</strong> configurável:</p>
+
+      <div class="interactive-box">
+        <div class="flow-steps" id="firstLoginFlow">
+          <div class="flow-step active" data-step="1">
+            <div class="flow-icon">📝</div>
+            <p><strong>Review Profile</strong></p>
+            <p>Mostra formulário para o usuário revisar/completar dados (nome, email). Útil quando o IDP não fornece todas as informações necessárias.</p>
+            <p><em>Configuração: REQUIRED (sempre mostra), ALTERNATIVE (só se faltar dados), DISABLED</em></p>
+          </div>
+          <div class="flow-step" data-step="2">
+            <div class="flow-icon">➕</div>
+            <p><strong>Create User If Unique</strong></p>
+            <p>Cria automaticamente um usuário local no Keycloak com os dados recebidos do IDP — mas apenas se não existir outro com o mesmo email/username. Sem isso, o login falha.</p>
+            <p><em>Quase sempre REQUIRED — sem usuário local, não há como emitir token.</em></p>
+          </div>
+          <div class="flow-step" data-step="3">
+            <div class="flow-icon">🔗</div>
+            <p><strong>Link Existing Account</strong></p>
+            <p>Se já existe um usuário com o mesmo email, tenta vincular em vez de criar duplicata. Evita o erro "User already exists".</p>
+            <p><em>Configuração: ALTERNATIVE — só executa se encontrar conta existente.</em></p>
+          </div>
+          <div class="flow-step" data-step="4">
+            <div class="flow-icon">📧</div>
+            <p><strong>Verify Existing Account</strong></p>
+            <p>Antes de vincular, envia email de confirmação ao dono da conta existente. Previne account takeover.</p>
+            <p><em>Segurança: REQUIRED quando "Trust Email" está desabilitado no IDP.</em></p>
+          </div>
+        </div>
+        <div class="scene-controls">
+          <button class="btn btn-secondary" id="btnPrevFL" onclick="prevFLStep()" disabled>← Anterior</button>
+          <span class="step-indicator" id="flIndicator">1 / 4</span>
+          <button class="btn" id="btnNextFL" onclick="nextFLStep()">Próximo →</button>
+        </div>
+      </div>
+
+      <h3>Account Linking</h3>
+
+      <p>Account Linking conecta múltiplas identidades a um único usuário no Keycloak:</p>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Cenário</th>
+              <th>Fluxo</th>
+              <th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Usuário local quer vincular Google</td>
+              <td>Account Console → Linked Accounts → Google → Link</td>
+              <td>Pode logar com senha OU Google</td>
+            </tr>
+            <tr>
+              <td>Usuário de IDP quer vincular conta local</td>
+              <td>First Login Flow detecta email existente → vincula</td>
+              <td>Mesma conta, duas formas de login</td>
+            </tr>
+            <tr>
+              <td>Conflito: email já existe</td>
+              <td>Depende do First Login Flow configurado</td>
+              <td>Vincula, pede verificação, ou falha</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Resolução de conflitos</h3>
+
+      <div class="interactive-box" style="border-left: 3px solid #e74c3c;">
+        <h4 style="font-family: var(--font-display); color: #e74c3c; margin-bottom: 12px;">⚠️ O que acontece quando o email já existe?</h4>
+        <div class="conflict-options">
+          <div class="conflict-item">
+            <strong>Opção 1: Vincular automaticamente (Trust Email = ON)</strong>
+            <p>Se o IDP diz que o email é verificado, vincula sem perguntar. Rápido, mas arriscado.</p>
+          </div>
+          <div class="conflict-item">
+            <strong>Opção 2: Verificar por email</strong>
+            <p>Envia email de confirmação ao dono da conta. Só vincula se ele confirmar. Seguro.</p>
+          </div>
+          <div class="conflict-item">
+            <strong>Opção 3: Falhar</strong>
+            <p>Retorna erro "User already exists". Usuário precisa resolver manualmente (admin ou Account Console).</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Diagrama completo: do login ao token</h3>
+
+      <div class="interactive-box">
+        <div class="full-flow-diagram">
+          <div class="ffd-row">
+            <div class="ffd-label">Entrada</div>
+            <div class="ffd-items">
+              <span class="ffd-pill ffd-source">Login local</span>
+              <span class="ffd-pill ffd-source">LDAP Federation</span>
+              <span class="ffd-pill ffd-source">IDP Brokering</span>
+            </div>
+          </div>
+          <div class="ffd-connector">↓</div>
+          <div class="ffd-row">
+            <div class="ffd-label">Mapeamento de entrada</div>
+            <div class="ffd-items">
+              <span class="ffd-pill ffd-mapper">LDAP Mappers</span>
+              <span class="ffd-pill ffd-mapper">IDP Mappers</span>
+              <span class="ffd-pill ffd-mapper">First Login Flow</span>
+            </div>
+          </div>
+          <div class="ffd-connector">↓</div>
+          <div class="ffd-row">
+            <div class="ffd-label">Usuário no Keycloak</div>
+            <div class="ffd-items">
+              <span class="ffd-pill ffd-user">Attributes</span>
+              <span class="ffd-pill ffd-user">Groups</span>
+              <span class="ffd-pill ffd-user">Roles</span>
+            </div>
+          </div>
+          <div class="ffd-connector">↓</div>
+          <div class="ffd-row">
+            <div class="ffd-label">Mapeamento de saída</div>
+            <div class="ffd-items">
+              <span class="ffd-pill ffd-mapper">Protocol Mappers</span>
+              <span class="ffd-pill ffd-mapper">Client Scopes</span>
+            </div>
+          </div>
+          <div class="ffd-connector">↓</div>
+          <div class="ffd-row">
+            <div class="ffd-label">Saída</div>
+            <div class="ffd-items">
+              <span class="ffd-pill ffd-token">Access Token (claims)</span>
+              <span class="ffd-pill ffd-token">ID Token (claims)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Resumo das camadas</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Camada</th>
+              <th>Pergunta</th>
+              <th>Configuração</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Origem</strong></td>
+              <td>De onde o usuário vem?</td>
+              <td>User Federation, Identity Providers</td>
+            </tr>
+            <tr>
+              <td><strong>Atributos</strong></td>
+              <td>O que sabemos sobre ele?</td>
+              <td>LDAP Mappers, IDP Mappers, User Attributes</td>
+            </tr>
+            <tr>
+              <td><strong>Roles</strong></td>
+              <td>O que ele pode fazer?</td>
+              <td>Role assignments, Group membership, Role mappers</td>
+            </tr>
+            <tr>
+              <td><strong>Token</strong></td>
+              <td>O que a aplicação vê?</td>
+              <td>Protocol Mappers, Client Scopes</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>A identidade no Keycloak é construída em camadas: <strong>origem</strong> (de onde o usuário vem) → <strong>atributos</strong> (o que sabemos sobre ele) → <strong>roles</strong> (o que ele pode fazer) → <strong>token</strong> (o que a aplicação vê). Cada camada tem seus próprios mappers e configurações. Entender esse fluxo é a chave para resolver qualquer problema de "o claim não aparece no token" ou "o atributo não está sendo mapeado".</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="04-social-login.html">← Módulo anterior</a>
+        <a href="index.html">Trilha 5 →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    // Tab switching
+    function showOrigin(which) {
+      document.querySelectorAll('.origin').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.getElementById(`origin-${which}`).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // First Login Flow steps
+    let flStep = 1;
+    const totalFLSteps = 4;
+
+    function showFLStep(n) {
+      document.querySelectorAll('#firstLoginFlow .flow-step').forEach(el => el.classList.remove('active'));
+      document.querySelector(`#firstLoginFlow .flow-step[data-step="${n}"]`).classList.add('active');
+      document.getElementById('flIndicator').textContent = `${n} / ${totalFLSteps}`;
+      document.getElementById('btnPrevFL').disabled = n === 1;
+      document.getElementById('btnNextFL').disabled = n === totalFLSteps;
+    }
+
+    function nextFLStep() { if (flStep < totalFLSteps) { flStep++; showFLStep(flStep); } }
+    function prevFLStep() { if (flStep > 1) { flStep--; showFLStep(flStep); } }
+  </script>
+  <style>
+    .origin { display: none; }
+    .origin.active { display: block; }
+
+    .toggle-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+    .tab { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 20px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); transition: all var(--transition); flex: 1; text-align: center; font-family: var(--font-display); }
+    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .tab:hover:not(.active) { border-color: var(--accent); }
+
+    .lifecycle-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .lc-step { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; min-width: 120px; }
+    .lc-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+    .lc-step strong { font-size: 0.85rem; color: var(--text-primary); display: block; margin-bottom: 4px; }
+    .lc-step p { font-size: 0.78rem; color: var(--text-secondary); margin: 0; }
+    .lc-arrow { color: var(--accent); font-weight: 700; font-size: 1.3rem; }
+
+    .attr-flow-diagram { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .afd-step { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; text-align: center; }
+    .afd-step code { display: block; font-size: 0.8rem; color: var(--accent); margin-bottom: 4px; }
+    .afd-step small { font-size: 0.75rem; color: var(--text-secondary); }
+    .afd-arrow { display: flex; flex-direction: column; align-items: center; color: var(--accent); font-weight: 700; font-size: 1.3rem; }
+    .afd-arrow span { font-size: 0.75rem; color: var(--text-secondary); font-weight: normal; }
+
+    .flow-steps { min-height: 120px; display: flex; align-items: center; justify-content: center; }
+    .flow-step { display: none; text-align: center; padding: 0 12px; }
+    .flow-step.active { display: block; }
+    .flow-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .flow-step p { color: var(--text-secondary); margin-bottom: 6px; font-size: 0.85rem; }
+    .flow-step em { color: var(--accent); font-size: 0.8rem; }
+
+    .scene-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .step-indicator { font-size: 0.85rem; color: var(--text-secondary); min-width: 40px; text-align: center; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .conflict-options { display: flex; flex-direction: column; gap: 12px; }
+    .conflict-item { padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
+    .conflict-item strong { font-size: 0.85rem; color: var(--text-primary); display: block; margin-bottom: 4px; }
+    .conflict-item p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+
+    .full-flow-diagram { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .ffd-row { display: flex; align-items: center; gap: 16px; width: 100%; }
+    .ffd-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); min-width: 140px; text-align: right; }
+    .ffd-items { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ffd-pill { padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 500; }
+    .ffd-source { background: rgba(52, 152, 219, 0.1); border: 1px solid rgba(52, 152, 219, 0.3); color: #3498db; }
+    .ffd-mapper { background: rgba(155, 89, 182, 0.1); border: 1px solid rgba(155, 89, 182, 0.3); color: #9b59b6; }
+    .ffd-user { background: rgba(46, 204, 113, 0.1); border: 1px solid rgba(46, 204, 113, 0.3); color: #27ae60; }
+    .ffd-token { background: var(--accent-glow); border: 1px solid rgba(212, 83, 10, 0.3); color: var(--accent); }
+    .ffd-connector { color: var(--accent); font-size: 1.3rem; font-weight: bold; }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .info-table tr:last-child td { border-bottom: none; }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .lifecycle-flow { flex-direction: column; }
+      .lc-arrow { transform: rotate(90deg); }
+      .attr-flow-diagram { flex-direction: column; }
+      .afd-arrow { flex-direction: row; gap: 4px; }
+      .ffd-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .ffd-label { min-width: auto; text-align: left; }
+      .info-table { font-size: 0.75rem; }
+      .toggle-tabs { flex-direction: column; }
+    }
+  </style>
+</body>
+</html>

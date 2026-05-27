@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring Boot | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">07 — Integração</a> → <span>Spring Boot</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Spring Boot</h2>
+
+      <p>Spring Boot integra com Keycloak usando <strong>Spring Security OAuth2</strong> — as mesmas bibliotecas que funcionam com qualquer provider OIDC. Nenhum adapter proprietário necessário.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🍃</span>
+        <h3>Dois papéis no Spring Boot</h3>
+        <p><strong>OAuth2 Client</strong> = login de usuários via redirect. <strong>Resource Server</strong> = proteger endpoints de API validando JWT.</p>
+      </div>
+
+      <h3>Dependências Maven</h3>
+
+      <pre class="code-block">&lt;!-- Para proteger APIs (Resource Server) --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-oauth2-resource-server&lt;/artifactId&gt;
+&lt;/dependency&gt;
+
+&lt;!-- Para login de usuários (OAuth2 Client) --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-oauth2-client&lt;/artifactId&gt;
+&lt;/dependency&gt;</pre>
+
+      <h3>Configuração: Resource Server</h3>
+
+      <p>Para uma API que apenas valida tokens (não faz login):</p>
+
+      <pre class="code-block"># application.yml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://keycloak/realms/meu-realm</pre>
+
+      <p>O Spring busca automaticamente o JWKS via discovery e valida assinatura, expiração e issuer.</p>
+
+      <h3>Configuração: OAuth2 Client</h3>
+
+      <p>Para uma aplicação web que faz login de usuários:</p>
+
+      <pre class="code-block"># application.yml
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: minha-app
+            client-secret: meu-secret
+            scope: openid,profile,email
+        provider:
+          keycloak:
+            issuer-uri: https://keycloak/realms/meu-realm</pre>
+
+      <h3>Security Configuration</h3>
+
+      <pre class="code-block">@Bean
+SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http.authorizeHttpRequests(auth -&gt; auth
+        .requestMatchers("/public/**").permitAll()
+        .requestMatchers("/admin/**").hasRole("admin")
+        .anyRequest().authenticated()
+    )
+    .oauth2ResourceServer(oauth2 -&gt; oauth2
+        .jwt(jwt -&gt; jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+    );
+    return http.build();
+}</pre>
+
+      <h3>Extraindo Roles do Keycloak</h3>
+
+      <p>O Keycloak coloca roles em claims não-padrão. O Spring não os reconhece automaticamente — você precisa de um converter:</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>📍 Onde o Keycloak coloca roles</h4>
+          <div class="comp-field"><code>realm_access.roles</code> — roles do realm</div>
+          <div class="comp-field"><code>resource_access.{client}.roles</code> — roles do client</div>
+        </div>
+        <div class="comparison-side">
+          <h4>📍 Onde o Spring espera</h4>
+          <div class="comp-field"><code>scope</code> claim (prefixo SCOPE_)</div>
+          <div class="comp-field">Ou authorities customizadas</div>
+        </div>
+      </div>
+
+      <pre class="code-block">@Bean
+JwtAuthenticationConverter jwtAuthenticationConverter() {
+    JwtGrantedAuthoritiesConverter grantedAuthorities = new JwtGrantedAuthoritiesConverter();
+
+    JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+    converter.setJwtGrantedAuthoritiesConverter(jwt -&gt; {
+        // Authorities padrão (scopes)
+        Collection&lt;GrantedAuthority&gt; authorities =
+            new ArrayList&lt;&gt;(grantedAuthorities.convert(jwt));
+
+        // Extrair realm roles do Keycloak
+        Map&lt;String, Object&gt; realmAccess = jwt.getClaimAsMap("realm_access");
+        if (realmAccess != null) {
+            List&lt;String&gt; roles = (List&lt;String&gt;) realmAccess.get("roles");
+            if (roles != null) {
+                roles.forEach(role -&gt;
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role))
+                );
+            }
+        }
+        return authorities;
+    });
+    return converter;
+}</pre>
+
+      <p>Com esse converter, <code>hasRole("admin")</code> funciona com roles do Keycloak.</p>
+
+      <h3>Testando</h3>
+
+      <pre class="code-block">// Teste com JWT mockado
+@Test
+@WithMockUser(roles = "admin")
+void adminEndpoint_withAdminRole_returns200() {
+    mockMvc.perform(get("/admin/users"))
+        .andExpect(status().isOk());
+}
+
+// Teste com JWT real (Spring Security Test)
+@Test
+void adminEndpoint_withJwt() {
+    mockMvc.perform(get("/admin/users")
+        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_admin")))
+    ).andExpect(status().isOk());
+}</pre>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Spring Boot + Keycloak = configuração OAuth2/OIDC padrão. Sem adapter proprietário. O único trabalho extra é o converter de roles — porque o Keycloak usa claims não-padrão para roles.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="01-conceitos-integracao.html">← Conceitos</a>
+        <a href="03-nodejs.html">Node.js →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+    }
+  </style>
+</body>
+</html>

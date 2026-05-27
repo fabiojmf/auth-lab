@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceitos de Integração | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">07 — Integração</a> → <span>Conceitos de Integração</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Conceitos de Integração</h2>
+
+      <p>Antes de escrever código, você precisa entender <strong>como</strong> sua aplicação se relaciona com o Keycloak. Existem dois papéis fundamentais — e uma aplicação pode exercer ambos ao mesmo tempo.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🔌</span>
+        <h3>Dois papéis de integração</h3>
+        <p>Sua aplicação pode ser um <strong>Client</strong> (faz login de usuários) ou um <strong>Resource Server</strong> (protege APIs) — ou ambos.</p>
+      </div>
+
+      <h3>Client (OAuth2 Client)</h3>
+
+      <p>Um Client é qualquer aplicação que <strong>redireciona o usuário ao Keycloak</strong> para autenticação e recebe tokens de volta.</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>📱 O que faz</h4>
+          <div class="comp-field">Redireciona usuário para login no Keycloak</div>
+          <div class="comp-field">Recebe authorization code no callback</div>
+          <div class="comp-field">Troca code por tokens (access + id + refresh)</div>
+          <div class="comp-field">Mantém sessão do usuário</div>
+        </div>
+        <div class="comparison-side">
+          <h4>📋 Exemplos</h4>
+          <div class="comp-field">App web com login (Spring Boot MVC)</div>
+          <div class="comp-field">SPA React com botão de login</div>
+          <div class="comp-field">App mobile que abre browser para login</div>
+          <div class="comp-field">Backend que usa Client Credentials (M2M)</div>
+        </div>
+      </div>
+
+      <h3>Resource Server</h3>
+
+      <p>Um Resource Server é qualquer API que <strong>recebe tokens</strong> de um client, valida-os e decide se concede ou nega acesso.</p>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>🛡️ O que faz</h4>
+          <div class="comp-field">Recebe token no header <code>Authorization: Bearer xxx</code></div>
+          <div class="comp-field">Valida assinatura, expiração, issuer, audience</div>
+          <div class="comp-field">Extrai roles/permissions do token</div>
+          <div class="comp-field">Concede ou nega acesso ao recurso</div>
+        </div>
+        <div class="comparison-side">
+          <h4>📋 Exemplos</h4>
+          <div class="comp-field">API REST Spring Boot</div>
+          <div class="comp-field">API Node.js/Express</div>
+          <div class="comp-field">Microserviço que só aceita chamadas autenticadas</div>
+          <div class="comp-field">API Gateway que valida tokens</div>
+        </div>
+      </div>
+
+      <h3>Uma app pode ser ambos</h3>
+
+      <p>Um backend web que faz login de usuários (Client) E expõe endpoints de API protegidos (Resource Server) exerce os dois papéis. Exemplo: um app Spring Boot com páginas web + endpoints REST.</p>
+
+      <h3>Adapters vs Bibliotecas Padrão</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>❌ Modo antigo (deprecated)</h4>
+          <div class="comp-field"><code>keycloak-spring-boot-adapter</code></div>
+          <div class="comp-field"><code>keycloak-js</code> (adapter JavaScript)</div>
+          <div class="comp-field"><code>keycloak-nodejs-connect</code></div>
+          <div class="comp-field">Acoplamento total ao Keycloak</div>
+          <div class="comp-field">⚠️ Deprecated desde Keycloak 19</div>
+        </div>
+        <div class="comparison-side">
+          <h4>✅ Modo novo (padrão OIDC)</h4>
+          <div class="comp-field"><code>spring-security-oauth2-*</code></div>
+          <div class="comp-field"><code>oidc-client-ts</code> / <code>react-oidc-context</code></div>
+          <div class="comp-field"><code>openid-client</code> / <code>jose</code></div>
+          <div class="comp-field">Funciona com qualquer provider OIDC</div>
+          <div class="comp-field">✅ Recomendado pelo próprio Keycloak</div>
+        </div>
+      </div>
+
+      <p><strong>Por que a mudança?</strong> Adapters proprietários criam vendor lock-in. Com bibliotecas padrão, seu código funciona com Keycloak, Auth0, Okta, Azure AD — qualquer provider OIDC compatível.</p>
+
+      <h3>Bibliotecas por Ecossistema</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Ecossistema</th>
+              <th>Biblioteca</th>
+              <th>Uso</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Java/Spring</td>
+              <td><code>spring-security-oauth2-resource-server</code></td>
+              <td>Proteger APIs (Resource Server)</td>
+            </tr>
+            <tr>
+              <td>Java/Spring</td>
+              <td><code>spring-security-oauth2-client</code></td>
+              <td>Login de usuários (Client)</td>
+            </tr>
+            <tr>
+              <td>Node.js</td>
+              <td><code>jose</code></td>
+              <td>Validação de JWT (leve, sem dependências)</td>
+            </tr>
+            <tr>
+              <td>Node.js</td>
+              <td><code>openid-client</code> (v6+)</td>
+              <td>Client OIDC completo (login flows)</td>
+            </tr>
+            <tr>
+              <td>React</td>
+              <td><code>oidc-client-ts</code> / <code>react-oidc-context</code></td>
+              <td>SPA com PKCE</td>
+            </tr>
+            <tr>
+              <td>Angular</td>
+              <td><code>angular-auth-oidc-client</code></td>
+              <td>SPA Angular com PKCE</td>
+            </tr>
+            <tr>
+              <td>Python</td>
+              <td><code>authlib</code> / <code>python-jose</code></td>
+              <td>Client e validação de tokens</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>OIDC Discovery Endpoint</h3>
+
+      <p>Todas as bibliotecas padrão usam o endpoint de <strong>discovery</strong> para se auto-configurar. Basta informar a URL do issuer — a biblioteca descobre sozinha os endpoints de token, JWKS, userinfo, etc.</p>
+
+      <pre class="code-block">GET https://keycloak/realms/meu-realm/.well-known/openid-configuration
+
+Resposta (resumida):
+{
+  "issuer": "https://keycloak/realms/meu-realm",
+  "authorization_endpoint": "https://keycloak/realms/meu-realm/protocol/openid-connect/auth",
+  "token_endpoint": "https://keycloak/realms/meu-realm/protocol/openid-connect/token",
+  "jwks_uri": "https://keycloak/realms/meu-realm/protocol/openid-connect/certs",
+  "userinfo_endpoint": "https://keycloak/realms/meu-realm/protocol/openid-connect/userinfo",
+  "end_session_endpoint": "https://keycloak/realms/meu-realm/protocol/openid-connect/logout"
+}</pre>
+
+      <p>Na prática, você configura apenas o <code>issuer-uri</code> e a biblioteca faz o resto.</p>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Use bibliotecas OIDC padrão, não adapters do Keycloak. Seu código deve funcionar com qualquer provider OIDC. Configure apenas o issuer-uri — o discovery faz o resto.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="index.html">← Trilha 7</a>
+        <a href="02-spring-boot.html">Spring Boot →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

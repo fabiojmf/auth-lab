@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Federation | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">05 — Usuários e Identidade</a> → <span>User Federation</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>User Federation</h2>
+
+      <p>User Federation é o mecanismo que permite ao Keycloak consultar uma base de usuários externa — sem duplicar dados. A empresa já tem 10.000 usuários no Active Directory? O Keycloak se conecta lá e valida credenciais diretamente.</p>
+
+      <h3>Por que federar?</h3>
+
+      <div class="interactive-box">
+        <div class="scenario-summary scenario-bad" style="margin-bottom: 16px;">
+          <p style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">❌ Sem Federation</p>
+          <ul>
+            <li>Duplicar milhares de usuários no Keycloak</li>
+            <li>Manter senhas sincronizadas manualmente</li>
+            <li>Usuário troca senha no AD → Keycloak não sabe</li>
+            <li>Dois pontos de gestão de identidade</li>
+          </ul>
+        </div>
+        <div class="scenario-summary scenario-good">
+          <p style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">✅ Com Federation</p>
+          <ul>
+            <li>Keycloak consulta o AD/LDAP em tempo de login</li>
+            <li>Senha validada na fonte original</li>
+            <li>Usuário troca senha no AD → funciona imediatamente</li>
+            <li>Um ponto de gestão, Keycloak só autentica</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Como funciona</h3>
+
+      <div class="interactive-box">
+        <div class="flow-steps" id="fedFlow">
+          <div class="flow-step active" data-step="1">
+            <div class="flow-icon">👤</div>
+            <p><strong>1.</strong> Usuário digita login e senha na tela do Keycloak</p>
+          </div>
+          <div class="flow-step" data-step="2">
+            <div class="flow-icon">🔍</div>
+            <p><strong>2.</strong> Keycloak não encontra o usuário localmente</p>
+          </div>
+          <div class="flow-step" data-step="3">
+            <div class="flow-icon">📡</div>
+            <p><strong>3.</strong> Keycloak consulta o provider de federation (LDAP/AD) por ordem de prioridade</p>
+          </div>
+          <div class="flow-step" data-step="4">
+            <div class="flow-icon">🔐</div>
+            <p><strong>4.</strong> LDAP valida: "Sim, esse usuário existe e a senha está correta"</p>
+          </div>
+          <div class="flow-step" data-step="5">
+            <div class="flow-icon">✅</div>
+            <p><strong>5.</strong> Keycloak cria/atualiza o usuário local (cache) e emite o token</p>
+            <p><em>O usuário aparece no Keycloak, mas a fonte de verdade continua sendo o LDAP.</em></p>
+          </div>
+        </div>
+        <div class="scene-controls">
+          <button class="btn btn-secondary" id="btnPrevFed" onclick="prevFedStep()" disabled>← Anterior</button>
+          <span class="step-indicator" id="fedIndicator">1 / 5</span>
+          <button class="btn" id="btnNextFed" onclick="nextFedStep()">Próximo →</button>
+        </div>
+      </div>
+
+      <h3>Tipos de Federation Providers</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>📂 LDAP / Active Directory</h4>
+          <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Built-in no Keycloak</p>
+          <ul>
+            <li>Configuração via Admin Console</li>
+            <li>Suporta LDAP v3 e AD</li>
+            <li>Mappers para atributos, roles, grupos</li>
+            <li>Sync periódico configurável</li>
+          </ul>
+        </div>
+        <div class="comparison-side">
+          <h4>⚙️ Custom User Storage SPI</h4>
+          <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Código Java customizado</p>
+          <ul>
+            <li>Conecta a qualquer fonte (DB, REST API, legado)</li>
+            <li>Implementa interfaces do Keycloak</li>
+            <li>Deploy como JAR no servidor</li>
+            <li>Ex: PJEStorageProvider para bases judiciais</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Configuração LDAP — parâmetros essenciais</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Parâmetro</th>
+              <th>Exemplo</th>
+              <th>Descrição</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Vendor</code></td>
+              <td><code>Active Directory</code> ou <code>Other</code></td>
+              <td>Tipo de servidor LDAP — auto-configura defaults (UUID attr, RDN, User Object Classes)</td>
+            </tr>
+            <tr>
+              <td><code>Connection URL</code></td>
+              <td><code>ldaps://ad.empresa.com:636</code></td>
+              <td>Endereço do servidor LDAP (389 = plain, 636 = TLS)</td>
+            </tr>
+            <tr>
+              <td><code>Bind DN</code></td>
+              <td><code>cn=keycloak,ou=services,dc=empresa,dc=com</code></td>
+              <td>Conta que o Keycloak usa para consultar o LDAP</td>
+            </tr>
+            <tr>
+              <td><code>Bind Credential</code></td>
+              <td><code>********</code></td>
+              <td>Senha da conta de bind</td>
+            </tr>
+            <tr>
+              <td><code>Users DN</code></td>
+              <td><code>ou=users,dc=empresa,dc=com</code></td>
+              <td>Base de busca — onde procurar usuários</td>
+            </tr>
+            <tr>
+              <td><code>User Object Classes</code></td>
+              <td><code>inetOrgPerson, organizationalPerson</code></td>
+              <td>Filtro de classes LDAP para identificar usuários</td>
+            </tr>
+            <tr>
+              <td><code>Username LDAP Attribute</code></td>
+              <td><code>uid</code> ou <code>sAMAccountName</code></td>
+              <td>Qual atributo LDAP mapeia para o username</td>
+            </tr>
+            <tr>
+              <td><code>UUID LDAP Attribute</code></td>
+              <td><code>entryUUID</code> ou <code>objectGUID</code></td>
+              <td>Identificador único imutável do registro LDAP (entryUUID para LDAP, objectGUID para AD)</td>
+            </tr>
+            <tr>
+              <td><code>RDN LDAP Attribute</code></td>
+              <td><code>uid</code> ou <code>cn</code></td>
+              <td>Atributo usado como RDN (Relative Distinguished Name) nas entradas LDAP</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Edit Mode — como o Keycloak interage com o LDAP</h3>
+
+      <div class="interactive-box">
+        <div class="edit-modes">
+          <div class="edit-mode-card">
+            <h4 style="font-family: var(--font-display);">READ_ONLY</h4>
+            <p>Keycloak só lê do LDAP. Usuário não pode trocar senha pelo Keycloak. Alterações só no LDAP diretamente.</p>
+            <span class="mode-tag">Mais seguro</span>
+          </div>
+          <div class="edit-mode-card">
+            <h4 style="font-family: var(--font-display);">WRITABLE</h4>
+            <p>Keycloak pode escrever no LDAP. Troca de senha, atualização de atributos — tudo reflete no LDAP.</p>
+            <span class="mode-tag">Bidirecional</span>
+          </div>
+          <div class="edit-mode-card">
+            <h4 style="font-family: var(--font-display);">UNSYNCED</h4>
+            <p>Alterações ficam só no Keycloak local. LDAP não é atualizado. Útil para testes ou atributos extras.</p>
+            <span class="mode-tag">Independente</span>
+          </div>
+        </div>
+      </div>
+
+      <h3>Import Users e Sync</h3>
+
+      <div class="interactive-box">
+        <table class="info-table">
+          <thead>
+            <tr>
+              <th>Configuração</th>
+              <th>Sim</th>
+              <th>Não</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Import Users</strong></td>
+              <td>Cria cópia local no KC (cache). Login mais rápido.</td>
+              <td>Consulta LDAP a cada login. Sempre atualizado.</td>
+            </tr>
+            <tr>
+              <td><strong>Periodic Full Sync</strong></td>
+              <td>Sincroniza todos os usuários periodicamente</td>
+              <td>Só importa no primeiro login de cada usuário</td>
+            </tr>
+            <tr>
+              <td><strong>Periodic Changed Users Sync</strong></td>
+              <td>Sincroniza apenas alterações recentes</td>
+              <td>Alterações só aparecem no próximo login</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Mappers LDAP</h3>
+
+      <p>Mappers definem como atributos do LDAP são traduzidos para o Keycloak:</p>
+
+      <div class="interactive-box">
+        <div class="mapper-list">
+          <div class="mapper-item">
+            <code>user-attribute-ldap-mapper</code>
+            <p>Mapeia um atributo LDAP → atributo do usuário no KC.<br><em>Ex: <code>mail</code> → <code>email</code>, <code>cn</code> → <code>firstName</code></em></p>
+          </div>
+          <div class="mapper-item">
+            <code>role-ldap-mapper</code>
+            <p>Mapeia roles do LDAP → roles no Keycloak.<br><em>Ex: role LDAP <code>cn=admins,ou=roles</code> → role KC <code>admin</code></em></p>
+          </div>
+          <div class="mapper-item">
+            <code>group-ldap-mapper</code>
+            <p>Mapeia OUs ou grupos LDAP → groups no Keycloak.<br><em>Ex: <code>ou=TI</code> → group <code>/TI</code></em></p>
+          </div>
+          <div class="mapper-item">
+            <code>msad-user-account-control-mapper</code>
+            <p>Específico para Active Directory: mapeia flags de conta (enabled/disabled, password expired) do atributo <code>userAccountControl</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Prioridade entre providers</h3>
+
+      <p>Quando existem múltiplos federation providers configurados, o campo <strong>Priority</strong> determina a ordem de busca. O Keycloak consulta do menor número (maior prioridade) para o maior. Se encontrar o usuário no primeiro provider, para ali.</p>
+
+      <h3>Custom User Storage SPI</h3>
+
+      <p>Para fontes que não são LDAP (banco de dados legado, API REST, sistema proprietário), organizações podem implementar a interface <code>UserStorageProvider</code> em Java. O provider é empacotado como JAR e deployado no Keycloak.</p>
+
+      <div class="interactive-box">
+        <pre><code>public class MeuStorageProvider implements
+    UserStorageProvider,
+    UserLookupProvider,
+    CredentialInputValidator {
+
+    // Buscar usuário por username
+    public UserModel getUserByUsername(RealmModel realm, String username) { ... }
+
+    // Validar credenciais contra a fonte externa
+    public boolean isValid(RealmModel realm, UserModel user,
+                           CredentialInput input) { ... }
+}</code></pre>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">Exemplo real: PJEStorageProvider conecta o Keycloak à base de usuários do sistema judicial.</p>
+      </div>
+
+      <h3>Cenário real: troubleshooting</h3>
+
+      <div class="interactive-box" style="border-left: 3px solid #e74c3c;">
+        <h4 style="font-family: var(--font-display); color: #e74c3c; margin-bottom: 12px;">🐛 "Usuário existe no LDAP mas não consegue logar no Keycloak"</h4>
+        <ol style="padding-left: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+          <li style="padding: 6px 0;"><strong>Verifique se o federation provider está ativo</strong> — pode estar desabilitado</li>
+          <li style="padding: 6px 0;"><strong>Confira o Users DN</strong> — o usuário pode estar em outra OU não coberta pela busca</li>
+          <li style="padding: 6px 0;"><strong>Teste a conexão</strong> — botão "Test Connection" e "Test Authentication" no Admin Console</li>
+          <li style="padding: 6px 0;"><strong>Verifique o Edit Mode</strong> — se READ_ONLY e a senha expirou no LDAP, o usuário não consegue trocar via KC</li>
+          <li style="padding: 6px 0;"><strong>Cheque o User Object Classes</strong> — se o filtro não inclui a classe do usuário, ele é invisível</li>
+          <li style="padding: 6px 0;"><strong>Olhe os logs</strong> — <code>org.keycloak.storage</code> em DEBUG mostra as queries LDAP</li>
+        </ol>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Ponto-chave</h4>
+        <p>User Federation = o Keycloak pergunta ao sistema externo "esse usuário existe e a senha está correta?" no momento do login. A fonte de verdade dos usuários continua sendo o LDAP/AD — o Keycloak é apenas o intermediário que centraliza a autenticação.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="01-gerenciamento-usuarios.html">← Módulo anterior</a>
+        <a href="03-identity-providers.html">Próximo módulo →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    let fedStep = 1;
+    const totalFedSteps = 5;
+
+    function showFedStep(n) {
+      document.querySelectorAll('.flow-step').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.flow-step[data-step="${n}"]`).classList.add('active');
+      document.getElementById('fedIndicator').textContent = `${n} / ${totalFedSteps}`;
+      document.getElementById('btnPrevFed').disabled = n === 1;
+      document.getElementById('btnNextFed').disabled = n === totalFedSteps;
+    }
+
+    function nextFedStep() { if (fedStep < totalFedSteps) { fedStep++; showFedStep(fedStep); } }
+    function prevFedStep() { if (fedStep > 1) { fedStep--; showFedStep(fedStep); } }
+  </script>
+  <style>
+    .flow-steps { min-height: 100px; display: flex; align-items: center; justify-content: center; }
+    .flow-step { display: none; text-align: center; padding: 0 12px; }
+    .flow-step.active { display: block; }
+    .flow-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .flow-step p { color: var(--text-secondary); margin-bottom: 6px; }
+    .flow-step em { color: var(--accent); font-size: 0.85rem; }
+
+    .scene-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .step-indicator { font-size: 0.85rem; color: var(--text-secondary); min-width: 40px; text-align: center; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .scenario-summary { padding: 16px 20px; border-radius: 8px; }
+    .scenario-summary ul { list-style: none; padding: 0; }
+    .scenario-summary li { padding: 4px 0; font-size: 0.85rem; color: var(--text-secondary); }
+    .scenario-summary li::before { margin-right: 8px; }
+    .scenario-bad { background: rgba(231, 76, 60, 0.05); border: 1px solid rgba(231, 76, 60, 0.15); }
+    .scenario-bad li::before { content: '✗'; color: #e74c3c; }
+    .scenario-good { background: var(--accent-glow); border: 1px solid rgba(212, 83, 10, 0.2); }
+    .scenario-good li::before { content: '✓'; color: var(--accent); }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .info-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-primary); font-weight: 600; }
+    .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .info-table tr:last-child td { border-bottom: none; }
+    .info-table code { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+
+    .edit-modes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .edit-mode-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .edit-mode-card p { font-size: 0.8rem; color: var(--text-secondary); margin: 8px 0; }
+    .mode-tag { font-size: 0.75rem; background: var(--accent-glow); color: var(--accent); padding: 3px 8px; border-radius: 4px; font-weight: 500; }
+
+    .mapper-list { display: flex; flex-direction: column; gap: 12px; }
+    .mapper-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .mapper-item code { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
+    .mapper-item p { font-size: 0.8rem; color: var(--text-secondary); margin: 8px 0 0; }
+    .mapper-item em { font-size: 0.75rem; }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .edit-modes { grid-template-columns: 1fr; }
+      .info-table { font-size: 0.75rem; }
+    }
+  </style>
+</body>
+</html>

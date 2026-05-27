@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logout e Session Management | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">07 — Integração</a> → <span>Logout e Session Management</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Logout e Session Management</h2>
+
+      <p>O logout parece simples, mas em SSO é um dos problemas mais complexos: o usuário faz logout na sua app, mas continua logado no Keycloak (e em todas as outras apps).</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🚪</span>
+        <h3>O problema do logout em SSO</h3>
+        <p>Limpar a sessão local não é suficiente. Logout completo exige coordenação entre sua app E o Keycloak.</p>
+      </div>
+
+      <h3>Tipos de Logout</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>O que faz</th>
+              <th>Quando usar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Application-only</strong></td>
+              <td>Limpa sessão local. Usuário continua logado no KC.</td>
+              <td>Quase nunca — confunde o usuário</td>
+            </tr>
+            <tr>
+              <td><strong>RP-Initiated</strong></td>
+              <td>Redireciona ao Keycloak, encerra sessão SSO</td>
+              <td>Sempre — é o logout padrão</td>
+            </tr>
+            <tr>
+              <td><strong>Backchannel</strong></td>
+              <td>Keycloak notifica sua app quando logout ocorre em outro lugar</td>
+              <td>Produção — para logout coordenado entre apps</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>RP-Initiated Logout</h3>
+
+      <p>O usuário clica "Logout" na sua app → você redireciona para o endpoint de logout do Keycloak:</p>
+
+      <pre class="code-block">GET /realms/meu-realm/protocol/openid-connect/logout?
+  id_token_hint=eyJhbGciOiJSUzI1NiIs...
+  &amp;client_id=minha-app
+  &amp;post_logout_redirect_uri=https://minha-app.com/</pre>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Parâmetro</th>
+              <th>Obrigatório</th>
+              <th>Função</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>id_token_hint</code></td>
+              <td>Recomendado</td>
+              <td>Prova qual usuário está fazendo logout (evita tela de confirmação)</td>
+            </tr>
+            <tr>
+              <td><code>client_id</code></td>
+              <td>Sim (se sem id_token_hint)</td>
+              <td>Identifica o client. Obrigatório no Keycloak 18+ quando <code>id_token_hint</code> está ausente.</td>
+            </tr>
+            <tr>
+              <td><code>post_logout_redirect_uri</code></td>
+              <td>Opcional</td>
+              <td>Para onde redirecionar após logout (deve estar configurado no client)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Sem <code>id_token_hint</code>, o Keycloak mostra uma página de confirmação pedindo ao usuário para confirmar o logout.</p>
+
+      <h3>Backchannel Logout</h3>
+
+      <p>Quando o usuário faz logout em outra aplicação, o Keycloak precisa notificar a sua. O Backchannel Logout faz isso via POST server-to-server:</p>
+
+      <pre class="code-block">Fluxo:
+1. Usuário faz logout no App A
+2. App A redireciona ao Keycloak (RP-Initiated)
+3. Keycloak encerra sessão SSO
+4. Keycloak envia POST para TODAS as apps com backchannel configurado
+5. Cada app recebe um logout_token e invalida a sessão local
+
+POST https://minha-app.com/backchannel-logout
+Content-Type: application/x-www-form-urlencoded
+
+logout_token=eyJhbGciOiJSUzI1NiIs...</pre>
+
+      <p>O <code>logout_token</code> é um JWT contendo:</p>
+
+      <pre class="code-block">{
+  "iss": "https://keycloak/realms/meu-realm",
+  "sub": "f1234-abcd-5678",
+  "sid": "session-id-do-keycloak",
+  "events": {
+    "http://schemas.openid.net/event/backchannel-logout": {}
+  }
+}</pre>
+
+      <p>Sua app deve: validar o JWT, encontrar a sessão local com aquele <code>sid</code>, e invalidá-la.</p>
+
+      <p><strong>Configuração no Keycloak:</strong> Client → Settings → Backchannel Logout URL → <code>https://minha-app.com/backchannel-logout</code></p>
+
+      <h3>Front-Channel Logout</h3>
+
+      <p>Alternativa ao backchannel: o Keycloak renderiza iframes ocultos apontando para a URL de logout de cada client. <strong>Menos confiável</strong> — bloqueado por ad blockers, políticas de privacidade do browser, e third-party cookie restrictions. Prefira backchannel.</p>
+
+      <h3>Revogação de Refresh Token</h3>
+
+      <p>No logout, revogue o refresh token para impedir que seja usado para obter novos access tokens:</p>
+
+      <pre class="code-block">POST /realms/meu-realm/protocol/openid-connect/revoke
+Content-Type: application/x-www-form-urlencoded
+
+token=refresh_token_value
+&amp;token_type_hint=refresh_token
+&amp;client_id=minha-app
+&amp;client_secret=secret</pre>
+
+      <h3>Session Timeout</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>⏱️ No Keycloak</h4>
+          <div class="comp-field">SSO Session Idle: tempo sem atividade (padrão 30min)</div>
+          <div class="comp-field">SSO Session Max: tempo máximo total (padrão 10h)</div>
+          <div class="comp-field">Access Token Lifespan: vida do access token (padrão 5min)</div>
+        </div>
+        <div class="comparison-side">
+          <h4>⏱️ Na sua app</h4>
+          <div class="comp-field">Idle timeout local (limpar sessão após inatividade)</div>
+          <div class="comp-field">Sincronizar com SSO Session Idle do KC</div>
+          <div class="comp-field">Não confiar apenas na expiração do token</div>
+        </div>
+      </div>
+
+      <h3>Problemas Comuns</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Sintoma</th>
+              <th>Causa</th>
+              <th>Solução</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Logout em app A, mas app B continua logada</td>
+              <td>Backchannel não configurado</td>
+              <td>Configurar Backchannel Logout URL em cada client</td>
+            </tr>
+            <tr>
+              <td>Logout redireciona para página de erro</td>
+              <td><code>post_logout_redirect_uri</code> não registrada</td>
+              <td>Adicionar URL em Client → Valid Post Logout Redirect URIs</td>
+            </tr>
+            <tr>
+              <td>Logout não funciona no SPA</td>
+              <td>Só limpa state local, não chama Keycloak</td>
+              <td>Usar <code>auth.signoutRedirect()</code> (não só limpar variáveis)</td>
+            </tr>
+            <tr>
+              <td>Usuário faz login de novo sem digitar senha</td>
+              <td>Sessão SSO ainda ativa no Keycloak</td>
+              <td>Implementar RP-Initiated Logout (não só local)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Logout correto exige coordenação entre sua app E o Keycloak. Sempre implemente RP-Initiated Logout (redirecionar ao KC) + Backchannel Logout (receber notificação) em produção. Revogue refresh tokens no logout.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="05-resource-server.html">← Resource Server</a>
+        <a href="index.html">Trilha 7 →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

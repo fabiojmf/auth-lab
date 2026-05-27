@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CORS e Web Origins | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">06 — Segurança e Políticas</a> → <span>CORS e Web Origins</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>CORS e Web Origins</h2>
+
+      <p>CORS (Cross-Origin Resource Sharing) é um mecanismo de segurança do <strong>browser</strong> que bloqueia requests entre origens diferentes. Em ambientes SSO, isso é inevitável: sua SPA em <code>app.example.com</code> precisa falar com o Keycloak em <code>keycloak.example.com</code>.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🌐</span>
+        <h3>Origens diferentes = CORS</h3>
+        <p><code>https://app.example.com</code> → <code>https://keycloak.example.com</code> = cross-origin (domínio diferente)</p>
+      </div>
+
+      <h3>Como funciona</h3>
+
+      <div class="interactive-box">
+        <div class="cors-flow">
+          <div class="cors-tabs">
+            <button class="cors-tab active" onclick="showCorsFlow('blocked')">❌ Sem CORS configurado</button>
+            <button class="cors-tab" onclick="showCorsFlow('allowed')">✅ Com CORS configurado</button>
+          </div>
+
+          <div class="cors-diagram" id="cors-blocked">
+            <div class="flow-row">
+              <div class="flow-actor">🌐 Browser<br><small>app.example.com</small></div>
+              <div class="flow-arrow flow-arrow-right">OPTIONS (preflight)</div>
+              <div class="flow-actor">🔐 Keycloak<br><small>keycloak.example.com</small></div>
+            </div>
+            <div class="flow-row">
+              <div class="flow-actor"></div>
+              <div class="flow-arrow flow-arrow-left blocked-arrow">Resposta SEM header CORS</div>
+              <div class="flow-actor"></div>
+            </div>
+            <div class="flow-row">
+              <div class="flow-result flow-blocked">🚫 O preflight (OPTIONS) chega ao Keycloak, mas a resposta não inclui o header Access-Control-Allow-Origin. O browser então BLOQUEIA o request principal (GET/POST) — ele nunca é enviado.</div>
+            </div>
+          </div>
+
+          <div class="cors-diagram" id="cors-allowed" style="display:none;">
+            <div class="flow-row">
+              <div class="flow-actor">🌐 Browser<br><small>app.example.com</small></div>
+              <div class="flow-arrow flow-arrow-right">OPTIONS (preflight)</div>
+              <div class="flow-actor">🔐 Keycloak<br><small>keycloak.example.com</small></div>
+            </div>
+            <div class="flow-row">
+              <div class="flow-actor"></div>
+              <div class="flow-arrow flow-arrow-left allowed-arrow">Access-Control-Allow-Origin: ✓</div>
+              <div class="flow-actor"></div>
+            </div>
+            <div class="flow-row">
+              <div class="flow-actor"></div>
+              <div class="flow-arrow flow-arrow-right">POST /token (request real)</div>
+              <div class="flow-actor"></div>
+            </div>
+            <div class="flow-row">
+              <div class="flow-result flow-success">✅ Browser permite. Token retornado com sucesso.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p><strong>Importante:</strong> o browser envia um request <code>OPTIONS</code> (preflight) <em>antes</em> do request real. Se o preflight falha, o request real nunca é enviado.</p>
+
+      <h3>Configuração no Keycloak</h3>
+
+      <p>A configuração de CORS fica no client: <strong>Clients → seu-client → Web Origins</strong></p>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Valor</th>
+              <th>Significado</th>
+              <th>Quando usar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>https://app.example.com</code></td>
+              <td>Permite apenas essa origem específica</td>
+              <td>✅ Produção — mais seguro</td>
+            </tr>
+            <tr>
+              <td><code>+</code></td>
+              <td>Deriva origens das Valid Redirect URIs</td>
+              <td>✅ Prático e seguro</td>
+            </tr>
+            <tr>
+              <td><code>*</code></td>
+              <td>Permite QUALQUER origem. Com <code>*</code>, qualquer site malicioso pode fazer requests autenticados ao Keycloak a partir do browser do usuário, potencialmente exfiltrando tokens ou realizando ações não autorizadas.</td>
+              <td>⚠️ Apenas dev/teste — PERIGOSO em produção</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>O que o <code>+</code> realmente faz</h3>
+
+      <div class="explanation-box">
+        <p>O <code>+</code> extrai <strong>scheme + host + port</strong> de cada Valid Redirect URI configurada:</p>
+        <div class="code-block"><code>Valid Redirect URIs:
+  https://app.example.com/callback
+  https://admin.example.com/*
+  http://localhost:3000/*
+
+Web Origins com "+":
+  → https://app.example.com
+  → https://admin.example.com
+  → http://localhost:3000</code></div>
+        <p>É o atalho mais usado — mantém CORS sincronizado com os redirects automaticamente.</p>
+      </div>
+
+      <p>Endpoints afetados pelo CORS: <code>/token</code>, <code>/userinfo</code>, <code>/logout</code>, <code>/certs</code> (JWKS), e <code>/auth</code> (para silent refresh via iframe).</p>
+
+      <h3>Erros comuns</h3>
+
+      <div class="error-cards">
+        <div class="error-card">
+          <div class="ec-header">
+            <span class="ec-icon">❌</span>
+            <span class="ec-title">Wildcard no hostname</span>
+          </div>
+          <div class="code-block"><code>https://*.example.com</code> <span class="code-annotation">✗ NÃO FUNCIONA</span></div>
+          <p>Wildcard só funciona no final do <strong>path</strong> (nas Redirect URIs), não no hostname. Para Web Origins, liste cada subdomínio explicitamente.</p>
+        </div>
+
+        <div class="error-card">
+          <div class="ec-header">
+            <span class="ec-icon">❌</span>
+            <span class="ec-title">Trailing slash</span>
+          </div>
+          <div class="code-block"><code>https://app.example.com/</code> <span class="code-annotation">✗ barra no final = não bate</span></div>
+          <p>A origem deve ser exatamente <code>scheme://host:port</code> sem path ou barra final.</p>
+        </div>
+
+        <div class="error-card">
+          <div class="ec-header">
+            <span class="ec-icon">❌</span>
+            <span class="ec-title">Porta diferente</span>
+          </div>
+          <div class="code-block"><code>http://localhost:3000 ≠ http://localhost:8080</code></div>
+          <p>Portas diferentes = origens diferentes. Cada porta precisa ser listada.</p>
+        </div>
+      </div>
+
+      <h3>Troubleshooting</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <strong>Abra DevTools → Network</strong>
+            <p>Procure o request que falhou. Verifique se há um OPTIONS (preflight) com status diferente de 200.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <strong>Verifique o erro no Console</strong>
+            <p>Mensagem típica: <code>Access to fetch at '...' from origin '...' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present</code></p>
+          </div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <strong>Corrija no Keycloak</strong>
+            <p>Adicione a origem exata em Web Origins do client, ou use <code>+</code> se a Redirect URI já está configurada.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Cenário real</h3>
+
+      <div class="scenario-card">
+        <div class="sc-header">
+          <span class="sc-icon">🚀</span>
+          <span class="sc-title">"CORS bloqueado após deploy em novo subdomínio"</span>
+        </div>
+        <p>A equipe fez deploy da aplicação em <code>https://staging.app.example.com</code>. O login parou de funcionar — CORS bloqueava o request ao Keycloak. A Valid Redirect URI foi atualizada, mas Web Origins não (estavam listadas manualmente em vez de usar <code>+</code>).</p>
+        <p><strong>Solução:</strong> Substituíram as origens manuais por <code>+</code>. Agora qualquer nova Redirect URI automaticamente libera o CORS correspondente.</p>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>💡 Key Takeaway</h4>
+        <p><strong>CORS é proteção do browser apenas.</strong> <code>curl</code> e Postman não têm CORS — por isso funciona no terminal mas não no browser. Use <code>+</code> em Web Origins para manter sincronizado com Redirect URIs. Nunca use <code>*</code> em produção. E lembre: wildcard no hostname não funciona.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="02-rotacao-chaves.html">← Rotação de Chaves</a>
+        <a href="04-sessoes.html">Próximo: Sessões →</a>
+      </nav>
+    </article>
+  </div>
+
+  <script>
+    function showCorsFlow(type) {
+      document.getElementById('cors-blocked').style.display = type === 'blocked' ? 'block' : 'none';
+      document.getElementById('cors-allowed').style.display = type === 'allowed' ? 'block' : 'none';
+      document.querySelectorAll('.cors-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+  </script>
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; font-family: var(--mono); font-size: 0.8rem; }
+
+    .cors-flow { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .cors-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .cors-tab { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; padding: 8px 16px; font-size: 0.8rem; cursor: pointer; color: var(--text-secondary); font-family: inherit; transition: all var(--transition); }
+    .cors-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(41, 151, 255, 0.05); }
+    .cors-tab:hover:not(.active) { border-color: var(--accent); color: var(--text-primary); }
+    .cors-diagram { padding: 10px 0; }
+    .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px; }
+    .flow-actor { text-align: center; font-size: 0.85rem; font-weight: 600; min-width: 120px; }
+    .flow-actor small { color: var(--text-secondary); font-size: 0.78rem; font-weight: 400; }
+    .flow-arrow { font-size: 0.82rem; color: var(--text-primary); font-family: var(--font-display); padding: 10px 16px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); flex: 1; text-align: center; font-weight: 500; position: relative; }
+    .flow-arrow-right { padding-right: 28px; }
+    .flow-arrow-left { padding-left: 28px; }
+    .flow-arrow-right::after { content: '→'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 1.3rem; color: var(--accent); font-weight: 700; }
+    .flow-arrow-left::before { content: '←'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 1.3rem; color: var(--accent); font-weight: 700; }
+    .blocked-arrow { border-color: #e74c3c; background: rgba(231, 76, 60, 0.06); }
+    .blocked-arrow::before { color: #e74c3c; }
+    .allowed-arrow { border-color: #2ecc71; background: rgba(46, 204, 113, 0.06); }
+    .allowed-arrow::before { color: #2ecc71; }
+    .blocked-arrow { color: #e74c3c; background: rgba(231, 76, 60, 0.08); }
+    .allowed-arrow { color: #27ae60; background: rgba(46, 204, 113, 0.08); }
+    .flow-result { text-align: center; font-size: 0.82rem; padding: 10px; border-radius: 6px; width: 100%; }
+    .flow-blocked { background: rgba(231, 76, 60, 0.08); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.2); }
+    .flow-success { background: rgba(46, 204, 113, 0.08); color: #27ae60; border: 1px solid rgba(46, 204, 113, 0.2); }
+
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+
+    .explanation-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 16px 0; }
+    .explanation-box p { font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0; }
+
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.85rem; line-height: 1.6; color: var(--text-primary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+
+    .error-cards { display: grid; gap: 12px; margin: 20px 0; }
+    .error-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .error-card p { font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px; }
+    .code-annotation { display: inline-block; margin-left: 12px; font-family: var(--font-display); font-size: 0.8rem; font-weight: 600; color: #e74c3c; background: rgba(231, 76, 60, 0.08); padding: 2px 10px; border-radius: 4px; }
+    .ec-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .ec-icon { font-size: 1rem; }
+    .ec-title { font-weight: 600; font-size: 0.9rem; }
+    .error-card p { font-size: 0.82rem; color: var(--text-secondary); margin: 8px 0 0; }
+    .error-card .code-block { margin: 8px 0; }
+
+    .steps-list { margin: 20px 0; }
+    .step-item { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; flex-shrink: 0; }
+    .step-content strong { display: block; margin-bottom: 4px; }
+    .step-content p { font-size: 0.83rem; color: var(--text-secondary); margin: 4px 0 0; }
+
+    .scenario-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+    .sc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .sc-icon { font-size: 1.2rem; }
+    .sc-title { font-weight: 600; font-size: 0.95rem; }
+    .scenario-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0; }
+
+    h3 { font-family: var(--font-display); }
+
+    @media (max-width: 640px) {
+      .cors-tabs { flex-direction: column; }
+      .flow-row { flex-direction: column; gap: 6px; }
+      .flow-actor { min-width: auto; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>

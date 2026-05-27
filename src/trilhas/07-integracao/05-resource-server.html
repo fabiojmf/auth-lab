@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Protegendo APIs (Resource Server) | AuthLab</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="../../css/trilha.css">
+  <script src="../../js/main.js"></script>
+  <script src="../../js/stepper.js" defer></script>
+  <script src="../../js/quiz.js" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para conteúdo</a>
+  <div class="container">
+    <header class="header">
+      <a href="../../index.html"><h1><span class="logo"><span class="logo-auth">auth</span><span class="logo-dot">·</span><span class="logo-lab">lab</span></span></h1></a>
+      <button class="theme-toggle" aria-label="Alternar tema escuro/claro" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../../index.html">Trilhas</a> → <a href="index.html">07 — Integração</a> → <span>Protegendo APIs</span>
+    </nav>
+
+    <article class="module-content" id="main-content">
+      <h2>Protegendo APIs (Resource Server)</h2>
+
+      <p>Um Resource Server é qualquer API que recebe um token de acesso, valida-o e decide se concede ou nega acesso ao recurso solicitado.</p>
+
+      <div class="core-question">
+        <span class="cq-icon">🛡️</span>
+        <h3>Duas formas de validar tokens</h3>
+        <p><strong>Validação local</strong> (JWT + assinatura) = rápido, sem rede. <strong>Introspection</strong> (pergunta ao Keycloak) = mais lento, mas verifica revogação.</p>
+      </div>
+
+      <h3>Validação Local vs Introspection</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>⚡ Validação Local (JWT)</h4>
+          <div class="comp-field">Verifica assinatura com chave pública (JWKS)</div>
+          <div class="comp-field">Sem chamada de rede na validação</div>
+          <div class="comp-field">Stateless — escala horizontalmente</div>
+          <div class="comp-field">Não detecta revogação em tempo real</div>
+          <div class="comp-field">✅ Use na maioria dos casos</div>
+        </div>
+        <div class="comparison-side">
+          <h4>🔍 Token Introspection</h4>
+          <div class="comp-field">Envia token ao Keycloak para validação</div>
+          <div class="comp-field">Chamada de rede a cada request</div>
+          <div class="comp-field">Detecta revogação imediatamente</div>
+          <div class="comp-field">Funciona com opaque tokens</div>
+          <div class="comp-field">Use quando revogação em tempo real é crítica</div>
+        </div>
+      </div>
+
+      <h3>Passos da Validação Local</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Passo</th>
+              <th>O que verificar</th>
+              <th>Se falhar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Extrair token do header <code>Authorization: Bearer xxx</code></td>
+              <td>401 — No token</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Buscar JWKS do Keycloak (com cache!)</td>
+              <td>503 — Cannot validate</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Verificar assinatura usando chave pública (matching <code>kid</code>)</td>
+              <td>401 — Invalid signature</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Verificar <code>exp</code> (não expirado)</td>
+              <td>401 — Token expired</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Verificar <code>iss</code> (issuer correto)</td>
+              <td>401 — Wrong issuer</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>Verificar <code>aud</code> (audience = esta API)</td>
+              <td>401 — Wrong audience</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>Extrair roles/permissions dos claims</td>
+              <td>403 — Forbidden (se role insuficiente)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Token Introspection</h3>
+
+      <pre class="code-block">POST /realms/meu-realm/protocol/openid-connect/token/introspect
+Content-Type: application/x-www-form-urlencoded
+
+token=eyJhbGciOiJSUzI1NiIs...
+&amp;client_id=minha-api
+&amp;client_secret=secret-da-api</pre>
+
+      <p>Resposta:</p>
+
+      <pre class="code-block">{
+  "active": true,
+  "sub": "f1234-abcd-5678",
+  "email": "user@example.com",
+  "realm_access": {
+    "roles": ["user", "admin"]
+  },
+  "client_id": "app-frontend",
+  "exp": 1716000000
+}</pre>
+
+      <p>Se <code>"active": false</code>, o token foi revogado ou expirou — negue acesso.</p>
+
+      <h3>Configurando Audience</h3>
+
+      <p>Por padrão, o Keycloak não inclui audience no access token. Sem audience, qualquer token do mesmo realm é aceito — <strong>inseguro</strong>.</p>
+
+      <pre class="code-block">Configuração no Keycloak:
+1. Client Scopes → Criar scope "minha-api-scope"
+2. Dentro do scope → Mappers → Add mapper
+3. Mapper type: Audience
+4. Included Client Audience: "minha-api"
+5. Atribuir o scope ao client que precisa acessar a API</pre>
+
+      <h3>Roles vs Scopes</h3>
+
+      <div class="comparison">
+        <div class="comparison-side">
+          <h4>👤 Roles (coarse-grained)</h4>
+          <div class="comp-field">Claim: <code>realm_access.roles</code></div>
+          <div class="comp-field">Ou: <code>resource_access.{client}.roles</code></div>
+          <div class="comp-field">Exemplo: admin, user, manager</div>
+          <div class="comp-field">Bom para: "quem pode acessar"</div>
+        </div>
+        <div class="comparison-side">
+          <h4>🔑 Scopes (fine-grained)</h4>
+          <div class="comp-field">Claim: <code>scope</code> (space-separated)</div>
+          <div class="comp-field">Exemplo: read write delete</div>
+          <div class="comp-field">Delegado pelo usuário ao client</div>
+          <div class="comp-field">Bom para: "o que pode fazer"</div>
+        </div>
+      </div>
+
+      <h3>Erros Comuns</h3>
+
+      <div class="config-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Erro</th>
+              <th>Causa</th>
+              <th>Solução</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Qualquer token do realm funciona</td>
+              <td>Não valida audience</td>
+              <td>Configurar Audience mapper + validar <code>aud</code></td>
+            </tr>
+            <tr>
+              <td>Token válido rejeitado após key rotation</td>
+              <td>JWKS cacheado para sempre</td>
+              <td>Use <code>createRemoteJWKSet</code> do jose (já faz refresh automático ao encontrar <code>kid</code> desconhecido). Em frameworks manuais: cache com TTL (ex: 5 min) + refresh on unknown kid.</td>
+            </tr>
+            <tr>
+              <td>500 em vez de 401 quando token expira</td>
+              <td>Exception não tratada</td>
+              <td>Catch específico → retornar 401 com mensagem clara</td>
+            </tr>
+            <tr>
+              <td>Roles não reconhecidas</td>
+              <td>Lendo claim errado</td>
+              <td>Verificar se roles estão em <code>realm_access</code> ou <code>resource_access</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="key-takeaway">
+        <h4>🎯 Key Takeaway</h4>
+        <p>Sempre valide: assinatura + exp + iss + aud. Use validação local para performance e introspection quando precisa de revogação em tempo real. Nunca esqueça de configurar audience.</p>
+      </div>
+
+      <nav class="module-nav">
+        <a href="04-spa-react.html">← SPA (React)</a>
+        <a href="06-logout-session.html">Logout →</a>
+      </nav>
+    </article>
+  </div>
+
+  <style>
+    .core-question { background: var(--bg-secondary); border: 2px solid var(--accent); border-radius: var(--radius); padding: 24px; text-align: center; margin: 24px 0; }
+    .cq-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .core-question h3 { font-family: var(--font-display); margin-bottom: 8px; }
+    .core-question p { color: var(--text-secondary); margin: 0; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .comparison-side { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .comparison-side h4 { font-family: var(--font-display); margin-bottom: 12px; }
+    .comp-field { font-size: 0.85rem; color: var(--text-secondary); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .comp-field:last-child { border-bottom: none; }
+    .config-table { margin: 20px 0; overflow-x: auto; }
+    .config-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .config-table th, .config-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+    .config-table th { background: var(--bg-secondary); font-family: var(--font-display); font-weight: 600; }
+    .config-table td { color: var(--text-secondary); }
+    .config-table code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+    .code-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; margin: 12px 0; }
+    h3 { font-family: var(--font-display); }
+    @media (max-width: 640px) {
+      .comparison { grid-template-columns: 1fr; }
+      .config-table { font-size: 0.75rem; }
+      .config-table th, .config-table td { padding: 6px 8px; }
+    }
+  </style>
+</body>
+</html>
