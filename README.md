@@ -1,56 +1,73 @@
-# AuthLab
+# auth·lab
 
 Treinamento interativo e visual de OAuth2, OpenID Connect, SSO e Keycloak — do básico ao avançado.
+
+🔗 **[Acessar o treinamento](https://fabiojmf.github.io/auth-lab/)**
 
 ## O que é
 
 AuthLab é um laboratório prático onde você aprende autenticação e autorização de forma visual e interativa, com um Keycloak real rodando localmente para experimentar.
 
+## Funcionalidades
+
+- 📚 **9 trilhas** com 48 módulos de conteúdo
+- 🎯 **Elementos interativos** — step-by-step animados, comparações, wizards de decisão
+- 🧪 **Labs práticos** — exercícios com curl no Keycloak local
+- 🧠 **Quizzes** — perguntas de fixação ao final dos módulos
+- 📋 **Glossário** — termos-chave com busca
+- 🌙 **Dark mode**
+- 📱 **Responsivo**
+
 ## Trilhas
 
-| # | Trilha | Descrição |
-|---|--------|-----------|
-| 1 | Fundamentos | OAuth2, OIDC, JWT, autenticação vs autorização |
-| 2 | Instalação e Arquitetura | Keycloak local, realms, estrutura |
-| 3 | Fluxos OAuth2/OIDC | Authorization Code, Client Credentials, Direct Grant |
-| 4 | Clients | Confidential vs Public, configuração, troubleshooting |
-| 5 | Usuários e Identidade | Federation, Identity Providers, social login |
-| 6 | Segurança e Políticas | Brute force, rotação de chaves, CORS, auditoria |
-| 7 | Integração | Spring Boot, Node.js, React, proteção de APIs |
-| 8 | Operação em Produção | Cluster, proxy reverso, monitoramento, upgrade |
-| 9 | Avançado | Custom themes, SPIs, Terraform, multi-tenancy |
+| # | Trilha | Módulos |
+|---|--------|---------|
+| 1 | Fundamentos | 4 |
+| 2 | Instalação e Arquitetura | 5 |
+| 3 | Fluxos OAuth2/OIDC | 5 |
+| 4 | Clients | 6 |
+| 5 | Usuários e Identidade | 5 |
+| 6 | Segurança e Políticas | 5 |
+| 7 | Integração | 6 |
+| 8 | Operação em Produção | 6 |
+| 9 | Avançado | 6 |
 
-## Requisitos
-
-- Docker e Docker Compose
-- Navegador moderno
-- (Opcional) Node.js 20+ para os exemplos de backend
-
-## Como rodar
+## Como rodar localmente
 
 ```bash
-# Subir o Keycloak
+# Subir o Keycloak (necessário para os labs práticos)
 cd docker
 docker compose up -d
 
-# Acessar o treinamento
-# Abra src/index.html no navegador
-
 # Keycloak Admin Console
 # http://localhost:8080 (admin/admin)
+
+# Realm pré-configurado: authlab
+# Usuários: maria/senha123 (admin) | joao/senha123 (viewer)
+# Client confidential: app-teste-confidential (secret: meu-secret-super-seguro)
+# Client public: app-teste-public (PKCE)
 ```
 
-## Estrutura do projeto
+O treinamento em si é HTML estático — abra `src/index.html` no browser ou acesse via GitHub Pages.
+
+## Requisitos
+
+- Docker e Docker Compose (para os labs)
+- Navegador moderno
+
+## Estrutura
 
 ```
 auth-lab/
+├── .github/workflows/   # Deploy GitHub Pages
 ├── docker/              # Keycloak + PostgreSQL
-├── src/                 # Treinamento (HTML/CSS/JS)
-│   ├── css/
-│   ├── js/
-│   ├── assets/
-│   └── trilhas/         # Conteúdo de cada trilha
-└── examples/            # Apps de exemplo (backend/frontend)
+│   ├── docker-compose.yml
+│   └── realm-export/    # Realm pré-configurado
+└── src/                 # Treinamento (publicado no Pages)
+    ├── css/
+    ├── js/
+    ├── trilhas/
+    └── glossario.html
 ```
 
 ## Licença
