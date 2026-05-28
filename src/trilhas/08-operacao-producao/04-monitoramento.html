@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">08 — Operação em Produção</a> → <span>Monitoramento e Métricas</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">08 — Operação em Produção</a> / <span>Módulo 04 — Monitoramento e Métricas</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -89,7 +89,7 @@ kc.sh start --metrics-enabled=true
 curl http://localhost:9000/metrics
 
 # Para métricas de eventos (logins, erros), habilite no realm:
-# Admin Console → Realm Settings → Events → Event Listeners → adicionar "metrics-listener"
+# Admin Console / Realm Settings / Events / Event Listeners / adicionar "metrics-listener"
 #
 # keycloak_logins_total{realm="meu-realm",client_id="app-web"} 1523
 # keycloak_login_errors_total{realm="meu-realm",error="invalid_user_credentials"} 47</div>
@@ -102,7 +102,7 @@ curl http://localhost:9000/metrics
             <tr><th>Opção</th><th>Valor</th><th>Quando usar</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>--log</code></td><td><code>console</code></td><td>Containers (stdout → log collector)</td></tr>
+            <tr><td><code>--log</code></td><td><code>console</code></td><td>Containers (stdout / log collector)</td></tr>
             <tr><td><code>--log</code></td><td><code>file</code></td><td>VMs com rotação de arquivo</td></tr>
             <tr><td><code>--log-console-output</code></td><td><code>json</code></td><td>Agregação (ELK, Loki, CloudWatch)</td></tr>
             <tr><td><code>--log-level</code></td><td><code>INFO</code></td><td>Produção (default)</td></tr>
@@ -124,10 +124,10 @@ kc.sh start --log=console --log-console-output=json --log-level=INFO
           <span class="sc-icon">🚨</span>
           <span class="sc-title">Alertas que você deve configurar</span>
         </div>
-        <p>• <strong>Login error rate spike:</strong> aumento súbito em <code>keycloak_login_errors</code> → possível ataque</p>
-        <p>• <strong>Health endpoint down:</strong> <code>/health/ready</code> retornando não-200 → instância com problema</p>
-        <p>• <strong>DB pool exhausted:</strong> <code>agroal_active_count</code> = max → queries lentas ou leak</p>
-        <p>• <strong>High GC pause:</strong> <code>jvm_gc_pause_seconds</code> > 1s → precisa de mais memória</p>
+        <p>• <strong>Login error rate spike:</strong> aumento súbito em <code>keycloak_login_errors</code> / possível ataque</p>
+        <p>• <strong>Health endpoint down:</strong> <code>/health/ready</code> retornando não-200 / instância com problema</p>
+        <p>• <strong>DB pool exhausted:</strong> <code>agroal_active_count</code> = max / queries lentas ou leak</p>
+        <p>• <strong>High GC pause:</strong> <code>jvm_gc_pause_seconds</code> > 1s / precisa de mais memória</p>
         <p>• <strong>HTTP latency P99 > 2s:</strong> degradação de performance</p>
       </div>
 
@@ -136,14 +136,14 @@ kc.sh start --log=console --log-console-output=json --log-level=INFO
       <div class="comparison">
         <div class="comparison-side">
           <h4>📈 Métricas</h4>
-          <div class="comp-field">Keycloak → <code>/metrics</code></div>
+          <div class="comp-field">Keycloak / <code>/metrics</code></div>
           <div class="comp-field">Prometheus (coleta)</div>
           <div class="comp-field">Grafana (dashboards)</div>
           <div class="comp-field">AlertManager (alertas)</div>
         </div>
         <div class="comparison-side">
           <h4>📝 Logs</h4>
-          <div class="comp-field">Keycloak → JSON stdout</div>
+          <div class="comp-field">Keycloak / JSON stdout</div>
           <div class="comp-field">Fluentd / Filebeat (coleta)</div>
           <div class="comp-field">Elasticsearch / Loki (armazena)</div>
           <div class="comp-field">Kibana / Grafana (busca)</div>

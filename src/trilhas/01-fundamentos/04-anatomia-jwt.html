@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">01 — Fundamentos</a> → <span>Anatomia de um JWT</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">01 — Fundamentos</a> / <span>Módulo 04 — Anatomia de um JWT</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -146,10 +146,10 @@
       <p>Quando algo dá errado (token rejeitado, permissão negada, usuário não reconhecido), a primeira coisa a fazer é <strong>decodificar o token</strong> e olhar as claims:</p>
 
       <ul class="feature-list">
-        <li><code>exp</code> já passou? → Token expirado</li>
-        <li><code>iss</code> é de outro ambiente? → Token de staging sendo usado em produção</li>
-        <li><code>resource_access</code> não tem o role esperado? → Usuário sem permissão naquele client</li>
-        <li><code>azp</code> é outro client? → Token emitido para aplicação errada</li>
+        <li><code>exp</code> já passou? / Token expirado</li>
+        <li><code>iss</code> é de outro ambiente? / Token de staging sendo usado em produção</li>
+        <li><code>resource_access</code> não tem o role esperado? / Usuário sem permissão naquele client</li>
+        <li><code>azp</code> é outro client? / Token emitido para aplicação errada</li>
       </ul>
 
       <h3>Decodificar ≠ Validar</h3>

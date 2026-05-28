@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">07 — Integração</a> → <span>Logout e Session Management</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">07 — Integração</a> / <span>Módulo 06 — Logout e Session Management</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -66,7 +66,7 @@
 
       <h3>RP-Initiated Logout</h3>
 
-      <p>O usuário clica "Logout" na sua app → você redireciona para o endpoint de logout do Keycloak:</p>
+      <p>O usuário clica "Logout" na sua app / você redireciona para o endpoint de logout do Keycloak:</p>
 
       <pre class="code-block">GET /realms/meu-realm/protocol/openid-connect/logout?
   id_token_hint=eyJhbGciOiJSUzI1NiIs...
@@ -133,7 +133,7 @@ logout_token=eyJhbGciOiJSUzI1NiIs...</pre>
 
       <p>Sua app deve: validar o JWT, encontrar a sessão local com aquele <code>sid</code>, e invalidá-la.</p>
 
-      <p><strong>Configuração no Keycloak:</strong> Client → Settings → Backchannel Logout URL → <code>https://minha-app.com/backchannel-logout</code></p>
+      <p><strong>Configuração no Keycloak:</strong> Client / Settings / Backchannel Logout URL / <code>https://minha-app.com/backchannel-logout</code></p>
 
       <h3>Front-Channel Logout</h3>
 
@@ -188,7 +188,7 @@ token=refresh_token_value
             <tr>
               <td>Logout redireciona para página de erro</td>
               <td><code>post_logout_redirect_uri</code> não registrada</td>
-              <td>Adicionar URL em Client → Valid Post Logout Redirect URIs</td>
+              <td>Adicionar URL em Client / Valid Post Logout Redirect URIs</td>
             </tr>
             <tr>
               <td>Logout não funciona no SPA</td>

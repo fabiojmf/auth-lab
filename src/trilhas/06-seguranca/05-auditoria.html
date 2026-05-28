@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">06 — Segurança e Políticas</a> → <span>Auditoria e Eventos</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">06 — Segurança e Políticas</a> / <span>Módulo 05 — Auditoria e Eventos</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -57,7 +57,7 @@
 
       <h3>Configuração</h3>
 
-      <p>Acesse: <strong>Realm Settings → Events</strong></p>
+      <p>Acesse: <strong>Realm Settings / Events</strong></p>
 
       <div class="config-table">
         <table>
@@ -167,7 +167,7 @@
         <div class="scenario-mini">
           <span class="sm-icon">⚙️</span>
           <strong>"Quem alterou a configuração do client?"</strong>
-          <p>Admin Events → filtrar por resourceType=CLIENT, operationType=UPDATE</p>
+          <p>Admin Events / filtrar por resourceType=CLIENT, operationType=UPDATE</p>
         </div>
         <div class="scenario-mini">
           <span class="sm-icon">🔗</span>
@@ -208,9 +208,9 @@
         </div>
       </div>
 
-      <p>Configuração: <strong>Realm Settings → Events → Event Listeners</strong>. O listener padrão é <code>jboss-logging</code> (escreve no log do servidor). Listeners customizados podem ser adicionados via SPI.</p>
+      <p>Configuração: <strong>Realm Settings / Events / Event Listeners</strong>. O listener padrão é <code>jboss-logging</code> (escreve no log do servidor). Listeners customizados podem ser adicionados via SPI.</p>
       <p>No Keycloak 20+ (baseado em Quarkus), o listener 'jboss-logging' escreve no sistema de logging do Quarkus. Configure via <code>--log-level</code> na linha de comando ou <code>KC_LOG_LEVEL</code> como variável de ambiente, não via standalone.xml.</p>
-      <p><strong>Abordagem prática mais comum:</strong> manter o listener <code>jboss-logging</code> → configurar formato JSON (<code>--log-format=json</code>) → coletar logs com Fluentd/Filebeat → enviar para ELK/Splunk. Não requer código customizado.</p>
+      <p><strong>Abordagem prática mais comum:</strong> manter o listener <code>jboss-logging</code> / configurar formato JSON (<code>--log-format=json</code>) / coletar logs com Fluentd/Filebeat / enviar para ELK/Splunk. Não requer código customizado.</p>
 
       <div class="key-takeaway">
         <h4>💡 Key Takeaway</h4>

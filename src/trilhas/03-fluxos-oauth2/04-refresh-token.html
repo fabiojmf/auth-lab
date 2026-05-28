@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">03 — Fluxos OAuth2/OIDC</a> → <span>Refresh Token</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">03 — Fluxos OAuth2/OIDC</a> / <span>Módulo 04 — Refresh Token</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -107,7 +107,7 @@
         <li>Se o Keycloak detectar reuso de um refresh_token já usado, revoga toda a sessão (possível roubo)</li>
       </ul>
 
-      <p>O Keycloak suporta isso nativamente. É configurável por realm em "Realm Settings" → "Tokens" → "Revoke Refresh Token".</p>
+      <p>O Keycloak suporta isso nativamente. É configurável por realm em "Realm Settings" / "Tokens" / "Revoke Refresh Token".</p>
 
       <h3>Onde guardar o refresh_token?</h3>
 
@@ -134,7 +134,7 @@
         <h4>💡 Resumo</h4>
         <p><strong>Refresh Token</strong> = troca um refresh_token por um novo access_token<br>
         <strong>Por que existe</strong> = access_token curto (segurança) + refresh_token longo (conveniência)<br>
-        <strong>Quando falha</strong> = refresh expirado, sessão revogada, chaves rotacionadas → login de novo</p>
+        <strong>Quando falha</strong> = refresh expirado, sessão revogada, chaves rotacionadas / login de novo</p>
       </div>
 
       <section class="lab-section">

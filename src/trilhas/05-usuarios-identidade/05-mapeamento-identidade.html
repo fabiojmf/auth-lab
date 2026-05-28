@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">05 — Usuários e Identidade</a> → <span>Mapeamento e Fluxo de Identidade</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">05 — Usuários e Identidade</a> / <span>Módulo 05 — Mapeamento e Fluxo de Identidade</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -147,9 +147,9 @@
           <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Dados ENTRAM no Keycloak</p>
           <ul>
             <li>Roda quando usuário loga via IDP externo</li>
-            <li>Transforma claims do IDP → atributos do KC</li>
-            <li>Configurado em: Identity Providers → Mappers</li>
-            <li>Ex: claim "department" do Google → attr "departamento" no KC</li>
+            <li>Transforma claims do IDP / atributos do KC</li>
+            <li>Configurado em: Identity Providers / Mappers</li>
+            <li>Ex: claim "department" do Google / attr "departamento" no KC</li>
             <li>Executa: no login (First Login + logins subsequentes)</li>
             <li><strong>Sync Mode</strong>: INHERIT, IMPORT (só no primeiro login), LEGACY ou FORCE (sempre sobrescreve)</li>
           </ul>
@@ -159,9 +159,9 @@
           <p style="color: var(--text-primary); font-weight: 500; margin-bottom: 12px;">Dados SAEM do Keycloak</p>
           <ul>
             <li>Roda quando o token é gerado</li>
-            <li>Transforma dados do KC → claims no token</li>
-            <li>Configurado em: Client Scopes → Mappers</li>
-            <li>Ex: attr "cpf" do KC → claim "cpf" no access_token</li>
+            <li>Transforma dados do KC / claims no token</li>
+            <li>Configurado em: Client Scopes / Mappers</li>
+            <li>Ex: attr "cpf" do KC / claim "cpf" no access_token</li>
             <li>Executa: a cada emissão/refresh de token</li>
           </ul>
         </div>
@@ -221,12 +221,12 @@
           <tbody>
             <tr>
               <td>Usuário local quer vincular Google</td>
-              <td>Account Console → Linked Accounts → Google → Link</td>
+              <td>Account Console / Linked Accounts / Google / Link</td>
               <td>Pode logar com senha OU Google</td>
             </tr>
             <tr>
               <td>Usuário de IDP quer vincular conta local</td>
-              <td>First Login Flow detecta email existente → vincula</td>
+              <td>First Login Flow detecta email existente / vincula</td>
               <td>Mesma conta, duas formas de login</td>
             </tr>
             <tr>
@@ -345,7 +345,7 @@
 
       <div class="key-takeaway">
         <h4>💡 Ponto-chave</h4>
-        <p>A identidade no Keycloak é construída em camadas: <strong>origem</strong> (de onde o usuário vem) → <strong>atributos</strong> (o que sabemos sobre ele) → <strong>roles</strong> (o que ele pode fazer) → <strong>token</strong> (o que a aplicação vê). Cada camada tem seus próprios mappers e configurações. Entender esse fluxo é a chave para resolver qualquer problema de "o claim não aparece no token" ou "o atributo não está sendo mapeado".</p>
+        <p>A identidade no Keycloak é construída em camadas: <strong>origem</strong> (de onde o usuário vem) / <strong>atributos</strong> (o que sabemos sobre ele) / <strong>roles</strong> (o que ele pode fazer) / <strong>token</strong> (o que a aplicação vê). Cada camada tem seus próprios mappers e configurações. Entender esse fluxo é a chave para resolver qualquer problema de "o claim não aparece no token" ou "o atributo não está sendo mapeado".</p>
       </div>
 
       <nav class="module-nav">

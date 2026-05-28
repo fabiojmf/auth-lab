@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">05 — Usuários e Identidade</a> → <span>Identity Providers (Brokering)</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">05 — Usuários e Identidade</a> / <span>Módulo 03 — Identity Providers (Brokering)</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -159,7 +159,7 @@
             <tr>
               <td><code>Mappers</code></td>
               <td>Transformam claims do IDP em atributos do KC</td>
-              <td><code>email → email, name → firstName</code></td>
+              <td><code>email / email, name / firstName</code></td>
             </tr>
             <tr>
               <td><code>Sync Mode</code></td>
@@ -272,7 +272,7 @@
         <h4 style="font-family: var(--font-display); color: var(--accent); margin-bottom: 12px;">🏛️ "TRE-PI quer que seus usuários façam login via o Keycloak deles"</h4>
         <ol style="padding-left: 20px; color: var(--text-secondary); font-size: 0.85rem;">
           <li style="padding: 6px 0;">No Keycloak do TRE-PI: registrar um client <code>keycloak-broker</code> (confidential, com redirect URI do seu KC)</li>
-          <li style="padding: 6px 0;">No seu Keycloak: Identity Providers → Add → OpenID Connect v1.0</li>
+          <li style="padding: 6px 0;">No seu Keycloak: Identity Providers / Add / OpenID Connect v1.0</li>
           <li style="padding: 6px 0;">Alias: <code>tre-pi-keycloak</code>, Display Name: <code>Login TRE-PI</code></li>
           <li style="padding: 6px 0;">Discovery URL: <code>https://sso.tre-pi.jus.br/realms/tre/.well-known/openid-configuration</code></li>
           <li style="padding: 6px 0;">Client ID: <code>keycloak-broker</code>, Client Secret: (fornecido pelo TRE-PI)</li>

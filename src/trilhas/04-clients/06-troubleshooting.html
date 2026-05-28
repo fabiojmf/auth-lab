@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">04 — Clients na Prática</a> → <span>Troubleshooting de Clients</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">04 — Clients na Prática</a> / <span>Módulo 06 — Troubleshooting de Clients</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -68,7 +68,7 @@
           <strong>✅ Como resolver:</strong>
           <ol>
             <li>Confira o <code>client_id</code> — é case-sensitive</li>
-            <li>Vá em Clients → seu client → Credentials → copie o secret atualizado</li>
+            <li>Vá em Clients / seu client / Credentials / copie o secret atualizado</li>
             <li>Se o client é public, <strong>não envie</strong> client_secret no request</li>
             <li>Verifique se está apontando para o realm correto na URL</li>
           </ol>
@@ -104,12 +104,12 @@
           <strong>✅ Como resolver:</strong>
           <ol>
             <li>Identifique qual grant_type/response_type você está usando</li>
-            <li>Vá em Clients → seu client → Settings</li>
+            <li>Vá em Clients / seu client / Settings</li>
             <li>Habilite o flow correspondente:
               <ul>
-                <li><code>response_type=code</code> → Standard Flow: On</li>
-                <li><code>grant_type=client_credentials</code> → Service accounts: On</li>
-                <li><code>grant_type=password</code> → Direct Access Grants: On</li>
+                <li><code>response_type=code</code> / Standard Flow: On</li>
+                <li><code>grant_type=client_credentials</code> / Service accounts: On</li>
+                <li><code>grant_type=password</code> / Direct Access Grants: On</li>
               </ul>
             </li>
           </ol>
@@ -185,7 +185,7 @@ No 'Access-Control-Allow-Origin' header is present.</code></div>
         <div class="error-fix">
           <strong>✅ Como resolver:</strong>
           <ol>
-            <li>Vá em Clients → seu client → Settings → Web Origins</li>
+            <li>Vá em Clients / seu client / Settings / Web Origins</li>
             <li>Adicione <code>+</code> (sinal de mais) — isso deriva automaticamente das Valid Redirect URIs</li>
             <li>Ou adicione explicitamente: <code>http://localhost:3000</code></li>
             <li>⚠️ Não use <code>*</code> em produção — permite qualquer origem</li>
@@ -224,10 +224,10 @@ No 'Access-Control-Allow-Origin' header is present.</code></div>
         <div class="error-fix">
           <strong>✅ Como resolver:</strong>
           <ol>
-            <li>Verifique Client → Client Scopes → Default/Optional scopes atribuídos</li>
+            <li>Verifique Client / Client Scopes / Default/Optional scopes atribuídos</li>
             <li>Dentro do scope, verifique se o mapper tem "Add to access token: On"</li>
-            <li>Se Full Scope Allowed está Off, vá em Client Scopes → Scope → atribua as roles</li>
-            <li>Use o "Evaluate" do Keycloak: Client Scopes → Evaluate → veja o token gerado</li>
+            <li>Se Full Scope Allowed está Off, vá em Client Scopes / Scope / atribua as roles</li>
+            <li>Use o "Evaluate" do Keycloak: Client Scopes / Evaluate / veja o token gerado</li>
           </ol>
         </div>
       </div>
@@ -291,7 +291,7 @@ Ou via API:
           <ul>
             <li>O <strong>Brute Force Protection</strong> do Keycloak foi ativado</li>
             <li>Muitas tentativas de login com senha errada</li>
-            <li>O Brute Force Protection precisa ser habilitado manualmente (Realm Settings → Security Defenses → Brute Force Detection). Quando ativo, o threshold é configurável.</li>
+            <li>O Brute Force Protection precisa ser habilitado manualmente (Realm Settings / Security Defenses / Brute Force Detection). Quando ativo, o threshold é configurável.</li>
             <li>Pode acontecer em testes quando você erra a senha várias vezes</li>
             <li>Também pode ser ativado por bots tentando senhas</li>
           </ul>
@@ -300,9 +300,9 @@ Ou via API:
         <div class="error-fix">
           <strong>✅ Como resolver:</strong>
           <ol>
-            <li>No Admin Console: Users → selecione o usuário → Credentials → desbloquear</li>
+            <li>No Admin Console: Users / selecione o usuário / Credentials / desbloquear</li>
             <li>Ou espere o tempo de bloqueio passar (configurável no realm)</li>
-            <li>Para ajustar: Realm Settings → Security Defenses → Brute Force Detection</li>
+            <li>Para ajustar: Realm Settings / Security Defenses / Brute Force Detection</li>
             <li>Em dev: considere desabilitar temporariamente ou aumentar o limite</li>
             <li>Em produção: mantenha habilitado, mas ajuste os thresholds</li>
           </ol>
@@ -336,8 +336,8 @@ Ou via API:
         <div class="error-fix">
           <strong>✅ Como resolver:</strong>
           <ol>
-            <li>Verifique se o scope existe: Realm → Client Scopes</li>
-            <li>Verifique se está atribuído ao client: Client → Client Scopes tab</li>
+            <li>Verifique se o scope existe: Realm / Client Scopes</li>
+            <li>Verifique se está atribuído ao client: Client / Client Scopes tab</li>
             <li>Confira se não há typo no nome do scope no request</li>
           </ol>
         </div>
@@ -371,7 +371,7 @@ O token foi emitido com sucesso, mas a API de destino rejeita.</code></div>
             <li>Decodifique o token (jwt.io) e verifique <code>aud</code>, <code>iss</code>, <code>exp</code></li>
             <li>Verifique se a configuração de JWKS endpoint da API aponta para a URL correta do Keycloak</li>
             <li>Se atrás de proxy, garanta que o <code>iss</code> no token bate com o que a API espera</li>
-            <li>Para audience: configure um mapper de Audience no client (Client Scopes → dedicated scope)</li>
+            <li>Para audience: configure um mapper de Audience no client (Client Scopes / dedicated scope)</li>
           </ol>
         </div>
       </div>
@@ -381,7 +381,7 @@ O token foi emitido com sucesso, mas a API de destino rejeita.</code></div>
         <p><strong>1.</strong> Leia a <code>error_description</code> — o Keycloak é bem descritivo.<br>
         <strong>2.</strong> Verifique os logs do Keycloak (nível DEBUG mostra detalhes da validação).<br>
         <strong>3.</strong> Use a aba "Sessions" e "Events" no Admin Console para ver o que aconteceu.<br>
-        <strong>4.</strong> No Keycloak 20+: Events → Login Events mostra cada tentativa com detalhes do erro.</p>
+        <strong>4.</strong> No Keycloak 20+: Events / Login Events mostra cada tentativa com detalhes do erro.</p>
       <p>Para habilitar logs detalhados do Keycloak:</p>
       <pre>bin/kc.sh start-dev --log-level=org.keycloak:DEBUG</pre>
       <p>Em Docker:</p>

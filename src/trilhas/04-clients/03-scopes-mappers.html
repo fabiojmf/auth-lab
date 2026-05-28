@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">04 — Clients na Prática</a> → <span>Scopes e Mappers</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">04 — Clients na Prática</a> / <span>Módulo 03 — Scopes e Mappers</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -66,7 +66,7 @@
             <span class="mc-title">User Attribute</span>
           </div>
           <p>Mapeia um atributo do usuário para uma claim no token.</p>
-          <div class="mc-example">Atributo <code>department</code> → claim <code>department</code></div>
+          <div class="mc-example">Atributo <code>department</code> / claim <code>department</code></div>
         </div>
 
         <div class="mapper-card">
@@ -75,7 +75,7 @@
             <span class="mc-title">User Realm Role</span>
           </div>
           <p>Inclui as roles do realm do usuário no token.</p>
-          <div class="mc-example">Roles → claim <code>realm_access.roles</code></div>
+          <div class="mc-example">Roles / claim <code>realm_access.roles</code></div>
         </div>
 
         <div class="mapper-card">
@@ -93,7 +93,7 @@
             <span class="mc-title">User Session Note</span>
           </div>
           <p>Mapeia dados da sessão (ex: IP, método de autenticação).</p>
-          <div class="mc-example">Session note <code>clientAddress</code> → claim <code>ip</code></div>
+          <div class="mc-example">Session note <code>clientAddress</code> / claim <code>ip</code></div>
         </div>
 
         <div class="mapper-card">
@@ -102,7 +102,7 @@
             <span class="mc-title">Group Membership</span>
           </div>
           <p>Inclui os grupos do usuário como claim no token. Claim típica: groups. Muito usado em ambientes corporativos.</p>
-          <div class="mc-example">Grupos do usuário → claim <code>groups</code></div>
+          <div class="mc-example">Grupos do usuário / claim <code>groups</code></div>
         </div>
       </div>
 
@@ -133,7 +133,7 @@
               <code>"resource_access": { }</code>
             </div>
           </div>
-          <p class="fsa-note">✅ Mais seguro. Use quando quer limitar o que cada client pode ver. Configure as roles na aba "Client Scopes" → "Scope".</p>
+          <p class="fsa-note">✅ Mais seguro. Use quando quer limitar o que cada client pode ver. Configure as roles na aba "Client Scopes" / "Scope".</p>
         </div>
       </div>
 
@@ -162,7 +162,7 @@
         </div>
       </div>
 
-      <h3>Simulador: Scopes → Token</h3>
+      <h3>Simulador: Scopes / Token</h3>
 
       <div class="interactive-box">
         <p class="sim-desc">Selecione os scopes e veja como o token muda:</p>
@@ -182,10 +182,10 @@
       <div class="key-takeaway">
         <h4>💡 Resumo</h4>
         <p><strong>Client Scope</strong> = pacote reutilizável de mappers e configurações.<br>
-        <strong>Protocol Mapper</strong> = regra que coloca dados no token (atributo → claim).<br>
+        <strong>Protocol Mapper</strong> = regra que coloca dados no token (atributo / claim).<br>
         <strong>Default scope</strong> = sempre incluído. <strong>Optional</strong> = só se pedido no request.<br>
         <strong>Full Scope Allowed</strong> = On inclui tudo, Off restringe. Desabilite para segurança.<br>
-        <strong>Token sem claim?</strong> → Verifique: scope atribuído? mapper existe? "Add to access token" marcado?</p>
+        <strong>Token sem claim?</strong> / Verifique: scope atribuído? mapper existe? "Add to access token" marcado?</p>
       </div>
 
       <nav class="module-nav">

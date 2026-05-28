@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">05 — Usuários e Identidade</a> → <span>User Federation</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">05 — Usuários e Identidade</a> / <span>Módulo 02 — User Federation</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -35,7 +35,7 @@
           <ul>
             <li>Duplicar milhares de usuários no Keycloak</li>
             <li>Manter senhas sincronizadas manualmente</li>
-            <li>Usuário troca senha no AD → Keycloak não sabe</li>
+            <li>Usuário troca senha no AD / Keycloak não sabe</li>
             <li>Dois pontos de gestão de identidade</li>
           </ul>
         </div>
@@ -44,7 +44,7 @@
           <ul>
             <li>Keycloak consulta o AD/LDAP em tempo de login</li>
             <li>Senha validada na fonte original</li>
-            <li>Usuário troca senha no AD → funciona imediatamente</li>
+            <li>Usuário troca senha no AD / funciona imediatamente</li>
             <li>Um ponto de gestão, Keycloak só autentica</li>
           </ul>
         </div>
@@ -230,15 +230,15 @@
         <div class="mapper-list">
           <div class="mapper-item">
             <code>user-attribute-ldap-mapper</code>
-            <p>Mapeia um atributo LDAP → atributo do usuário no KC.<br><em>Ex: <code>mail</code> → <code>email</code>, <code>cn</code> → <code>firstName</code></em></p>
+            <p>Mapeia um atributo LDAP / atributo do usuário no KC.<br><em>Ex: <code>mail</code> / <code>email</code>, <code>cn</code> / <code>firstName</code></em></p>
           </div>
           <div class="mapper-item">
             <code>role-ldap-mapper</code>
-            <p>Mapeia roles do LDAP → roles no Keycloak.<br><em>Ex: role LDAP <code>cn=admins,ou=roles</code> → role KC <code>admin</code></em></p>
+            <p>Mapeia roles do LDAP / roles no Keycloak.<br><em>Ex: role LDAP <code>cn=admins,ou=roles</code> / role KC <code>admin</code></em></p>
           </div>
           <div class="mapper-item">
             <code>group-ldap-mapper</code>
-            <p>Mapeia OUs ou grupos LDAP → groups no Keycloak.<br><em>Ex: <code>ou=TI</code> → group <code>/TI</code></em></p>
+            <p>Mapeia OUs ou grupos LDAP / groups no Keycloak.<br><em>Ex: <code>ou=TI</code> / group <code>/TI</code></em></p>
           </div>
           <div class="mapper-item">
             <code>msad-user-account-control-mapper</code>

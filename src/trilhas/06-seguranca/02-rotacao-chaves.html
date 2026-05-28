@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">06 — Segurança e Políticas</a> → <span>Rotação de Chaves</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">06 — Segurança e Políticas</a> / <span>Módulo 02 — Rotação de Chaves</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -49,7 +49,7 @@
           <span class="ci-icon">📍</span>
           <div class="ci-content">
             <strong>Onde ver</strong>
-            <p>Realm Settings → Keys → aba "Active" mostra as chaves em uso.</p>
+            <p>Realm Settings / Keys / aba "Active" mostra as chaves em uso.</p>
           </div>
         </div>
       </div>
@@ -78,7 +78,7 @@ As aplicações devem consultar este endpoint periodicamente — não cachear pa
         <li><strong>Boa prática de segurança:</strong> limitar o tempo de vida de uma chave reduz o impacto de comprometimento</li>
         <li><strong>Chave comprometida:</strong> se a chave privada vazou, rotacionar imediatamente</li>
         <li><strong>Compliance:</strong> regulamentações podem exigir rotação periódica (ex: PCI-DSS)</li>
-        <li><strong>Migração:</strong> mudança de algoritmo (ex: RS256 → RS512)</li>
+        <li><strong>Migração:</strong> mudança de algoritmo (ex: RS256 / RS512)</li>
       </ul>
 
       <h3>O que acontece quando você rotaciona</h3>
@@ -168,7 +168,7 @@ As aplicações devem consultar este endpoint periodicamente — não cachear pa
         </div>
       </div>
 
-      <p><strong>Como fazer no Admin Console:</strong> Realm Settings → Keys → aba Providers → adicione um novo provider 'rsa-generated' com prioridade maior que o existente. A chave com maior prioridade se torna Active automaticamente. A chave antiga fica como Passive (ainda valida tokens antigos).</p>
+      <p><strong>Como fazer no Admin Console:</strong> Realm Settings / Keys / aba Providers / adicione um novo provider 'rsa-generated' com prioridade maior que o existente. A chave com maior prioridade se torna Active automaticamente. A chave antiga fica como Passive (ainda valida tokens antigos).</p>
 
       <h3>Cenário real: o incidente clássico</h3>
 

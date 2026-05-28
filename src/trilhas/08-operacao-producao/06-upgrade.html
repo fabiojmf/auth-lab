@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">08 — Operação em Produção</a> → <span>Upgrade de Versão</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">08 — Operação em Produção</a> / <span>Módulo 06 — Upgrade de Versão</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -30,7 +30,7 @@
       <div class="core-question">
         <span class="cq-icon">⬆️</span>
         <h3>Regra de ouro</h3>
-        <p>Backup → Teste em staging → Upgrade em produção. Nessa ordem. Sempre.</p>
+        <p>Backup / Teste em staging / Upgrade em produção. Nessa ordem. Sempre.</p>
       </div>
 
       <h3>Regras de Upgrade</h3>
@@ -42,7 +42,7 @@
           </thead>
           <tbody>
             <tr><td>Schema migra automaticamente</td><td>O Keycloak atualiza o banco no startup — sem scripts manuais</td></tr>
-            <tr><td>Upgrade sequencial recomendado</td><td>Faça N → N+1 → N+2. Pular versões não é oficialmente suportado e pode causar falhas na migração do schema</td></tr>
+            <tr><td>Upgrade sequencial recomendado</td><td>Faça N / N+1 / N+2. Pular versões não é oficialmente suportado e pode causar falhas na migração do schema</td></tr>
             <tr><td>NÃO pode fazer downgrade</td><td>Schema é forward-only. Rollback = restaurar backup do banco</td></tr>
             <tr><td>Sempre leia o Upgrading Guide</td><td>Breaking changes são documentadas por versão</td></tr>
           </tbody>
@@ -122,8 +122,8 @@
           <span class="sc-icon">🔄</span>
           <span class="sc-title">Kubernetes Rolling Update</span>
         </div>
-        <p>• Rolling updates funcionam para <strong>patch/minor</strong> upgrades (ex: 24.0.1 → 24.0.5)</p>
-        <p>• Para <strong>major</strong> upgrades (ex: 23 → 24), prefira parar todas as instâncias antigas antes de subir as novas (recreate strategy)</p>
+        <p>• Rolling updates funcionam para <strong>patch/minor</strong> upgrades (ex: 24.0.1 / 24.0.5)</p>
+        <p>• Para <strong>major</strong> upgrades (ex: 23 / 24), prefira parar todas as instâncias antigas antes de subir as novas (recreate strategy)</p>
         <p>• O primeiro pod novo que sobe executa a migração do schema</p>
         <p>• Em major upgrades, pods antigos podem não funcionar com o schema novo — risco de erros</p>
         <p>• Monitore durante o rollout — se houver erros, restaure o backup do banco e faça rollback da imagem</p>
@@ -145,7 +145,7 @@
         </table>
       </div>
 
-      <h3>Migração WildFly → Quarkus</h3>
+      <h3>Migração WildFly / Quarkus</h3>
 
       <p>Se você ainda está no Keycloak legacy (WildFly), a migração para Quarkus é uma mudança significativa:</p>
 
@@ -172,8 +172,8 @@
 # https://www.keycloak.org/migration/migrating-to-quarkus
 #
 # Passos principais:
-# 1. Mapear standalone.xml → keycloak.conf (opções equivalentes)
-# 2. Converter jboss-cli scripts → kc.sh commands
+# 1. Mapear standalone.xml / keycloak.conf (opções equivalentes)
+# 2. Converter jboss-cli scripts / kc.sh commands
 # 3. Atualizar Dockerfile (nova imagem base)
 # 4. Testar extensivamente em staging
 # 5. O banco de dados é compatível — não precisa migrar dados</div>

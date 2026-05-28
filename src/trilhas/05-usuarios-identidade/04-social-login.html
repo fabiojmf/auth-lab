@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">05 — Usuários e Identidade</a> → <span>Social Login</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">05 — Usuários e Identidade</a> / <span>Módulo 04 — Social Login</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -44,7 +44,7 @@
           <div class="provider-pill">🟡 PayPal</div>
           <div class="provider-pill">⚙️ OpenID Connect (genérico)</div>
         </div>
-        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">Cada um já tem os endpoints pré-configurados. Você só precisa fornecer Client ID + Secret. No Admin Console do KC 20+, todos ficam em <strong>Identity Providers → Add provider</strong> (não existe seção separada "Social").</p>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">Cada um já tem os endpoints pré-configurados. Você só precisa fornecer Client ID + Secret. No Admin Console do KC 20+, todos ficam em <strong>Identity Providers / Add provider</strong> (não existe seção separada "Social").</p>
       </div>
 
       <h3>Configuração passo a passo — Google como exemplo</h3>
@@ -53,7 +53,7 @@
         <div class="flow-steps" id="configFlow">
           <div class="flow-step active" data-step="1">
             <div class="flow-icon">☁️</div>
-            <p><strong>1.</strong> No Google Cloud Console: APIs & Services → Credentials → Create OAuth Client ID</p>
+            <p><strong>1.</strong> No Google Cloud Console: APIs & Services / Credentials / Create OAuth Client ID</p>
             <p><em>Tipo: Web Application. Anote o Client ID e Client Secret gerados.</em></p>
           </div>
           <div class="flow-step" data-step="2">
@@ -63,7 +63,7 @@
           </div>
           <div class="flow-step" data-step="3">
             <div class="flow-icon">⚙️</div>
-            <p><strong>3.</strong> No Keycloak: Identity Providers → Add provider → Google</p>
+            <p><strong>3.</strong> No Keycloak: Identity Providers / Add provider / Google</p>
             <p><em>Cole o Client ID e Client Secret do passo 1.</em></p>
           </div>
           <div class="flow-step" data-step="4">
@@ -125,11 +125,11 @@
           <tbody>
             <tr>
               <td>Usuário com senha quer adicionar Google</td>
-              <td>Acessa Account Console → Linked Accounts → vincula a conta Google</td>
+              <td>Acessa Account Console / Linked Accounts / vincula a conta Google</td>
             </tr>
             <tr>
               <td>Usuário logou via Google, quer definir senha</td>
-              <td>Acessa Account Console → Password → define uma senha local</td>
+              <td>Acessa Account Console / Password / define uma senha local</td>
             </tr>
             <tr>
               <td>Primeiro login via Google, email já existe</td>
@@ -161,7 +161,7 @@
             <span class="mapper-to">KC: <code>email</code> (standard attr)</span>
           </div>
         </div>
-        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">Configure em: Identity Providers → [provider] → Mappers → Add mapper</p>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px;">Configure em: Identity Providers / [provider] / Mappers / Add mapper</p>
       </div>
 
       <h3>Segurança — riscos do Social Login</h3>
@@ -177,7 +177,7 @@
           </div>
           <div class="sec-item">
             <strong>Account takeover via email</strong>
-            <p>Atacante cria conta social com email da vítima → First Login Flow vincula à conta existente → atacante tem acesso.</p>
+            <p>Atacante cria conta social com email da vítima / First Login Flow vincula à conta existente / atacante tem acesso.</p>
             <p><em>Mitigação: exigir verificação de email antes de vincular (Verify Existing Account no First Login Flow).</em></p>
           </div>
           <div class="sec-item">

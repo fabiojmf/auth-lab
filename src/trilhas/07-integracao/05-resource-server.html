@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">07 — Integração</a> → <span>Protegendo APIs</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">07 — Integração</a> / <span>Módulo 05 — Protegendo APIs</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -134,8 +134,8 @@ token=eyJhbGciOiJSUzI1NiIs...
       <p>Por padrão, o Keycloak não inclui audience no access token. Sem audience, qualquer token do mesmo realm é aceito — <strong>inseguro</strong>.</p>
 
       <pre class="code-block">Configuração no Keycloak:
-1. Client Scopes → Criar scope "minha-api-scope"
-2. Dentro do scope → Mappers → Add mapper
+1. Client Scopes / Criar scope "minha-api-scope"
+2. Dentro do scope / Mappers / Add mapper
 3. Mapper type: Audience
 4. Included Client Audience: "minha-api"
 5. Atribuir o scope ao client que precisa acessar a API</pre>
@@ -184,7 +184,7 @@ token=eyJhbGciOiJSUzI1NiIs...
             <tr>
               <td>500 em vez de 401 quando token expira</td>
               <td>Exception não tratada</td>
-              <td>Catch específico → retornar 401 com mensagem clara</td>
+              <td>Catch específico / retornar 401 com mensagem clara</td>
             </tr>
             <tr>
               <td>Roles não reconhecidas</td>

@@ -19,7 +19,7 @@
     </header>
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../../index.html">Trilhas</a> → <a href="index.html">06 — Segurança e Políticas</a> → <span>CORS e Web Origins</span>
+      <a href="../../index.html">Trilhas</a> / <a href="index.html">06 — Segurança e Políticas</a> / <span>Módulo 03 — CORS e Web Origins</span>
     </nav>
 
     <article class="module-content" id="main-content">
@@ -30,7 +30,7 @@
       <div class="core-question">
         <span class="cq-icon">🌐</span>
         <h3>Origens diferentes = CORS</h3>
-        <p><code>https://app.example.com</code> → <code>https://keycloak.example.com</code> = cross-origin (domínio diferente)</p>
+        <p><code>https://app.example.com</code> / <code>https://keycloak.example.com</code> = cross-origin (domínio diferente)</p>
       </div>
 
       <h3>Como funciona</h3>
@@ -85,7 +85,7 @@
 
       <h3>Configuração no Keycloak</h3>
 
-      <p>A configuração de CORS fica no client: <strong>Clients → seu-client → Web Origins</strong></p>
+      <p>A configuração de CORS fica no client: <strong>Clients / seu-client / Web Origins</strong></p>
 
       <div class="config-table">
         <table>
@@ -126,9 +126,9 @@
   http://localhost:3000/*
 
 Web Origins com "+":
-  → https://app.example.com
-  → https://admin.example.com
-  → http://localhost:3000</code></div>
+  / https://app.example.com
+  / https://admin.example.com
+  / http://localhost:3000</code></div>
         <p>É o atalho mais usado — mantém CORS sincronizado com os redirects automaticamente.</p>
       </div>
 
@@ -171,7 +171,7 @@ Web Origins com "+":
         <div class="step-item">
           <span class="step-num">1</span>
           <div class="step-content">
-            <strong>Abra DevTools → Network</strong>
+            <strong>Abra DevTools / Network</strong>
             <p>Procure o request que falhou. Verifique se há um OPTIONS (preflight) com status diferente de 200.</p>
           </div>
         </div>
