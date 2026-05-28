@@ -3,6 +3,8 @@
   font-size: 0.875rem;
   color: var(--text-secondary);
   margin-bottom: 32px;
+  word-spacing: 0.25em;
+  padding: 10px 0;
 }
 
 .breadcrumb a {
